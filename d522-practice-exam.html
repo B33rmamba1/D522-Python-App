@@ -136,13 +136,23 @@ textarea.editor{width:100%;min-height:200px;resize:vertical;border:none;backgrou
 // D522 SKO1 practice bank — variant questions (not verbatim), grouped by competency.
 // topic buckets map to the real exam weighting: syntax(40) / control(37) / modules(23)
 // type: 'mc' (multiple choice) or 'code' (Pyodide-graded)
-// code questions carry: starter, a python `harness` returning JSON checks, and hints[3]
+//
+// RANDOMIZED coding questions carry:
+//   gen()  -> {spec, examples}   fresh random inputs + display examples, made per attempt
+//   ref    -> python source defining _ref(...)  the reference (correct) implementation
+//   harness-> reads SPEC (the spec object) and uses _ref to compute expected answers
+// Non-randomized code questions keep hardcoded harness using run('...').
 
 const TOPICS = {
   syntax:  {name:'Principles & Syntax', weight:40},
   control: {name:'Control Structures',  weight:37},
   modules: {name:'Modules & Files',     weight:23}
 };
+
+// display helper: python-style float ("2" -> "2.0", 0.5 -> "0.5")
+function pyf(x){ return Number.isInteger(x) ? x + '.0' : String(x); }
+function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
 
 const QUESTIONS = [
 /* 1 */ {type:'mc', topic:'modules', prompt:'Which function is used to add data to a file, such as appending to a network configuration log?',
@@ -175,79 +185,83 @@ const QUESTIONS = [
   answer:1, why:'else must sit at the SAME indentation level as its if. Here else is indented too far (nested under the if body). Dropping it back to align with if fixes the IndentationError.'},
 
 /* 7 */ {type:'code', topic:'modules', prompt:'Complete <code>format_rgb</code>. It accepts a list of integers representing R, G, B values and returns a single string formatted as an RGB color. The formatted string contains NO spaces between values.',
-  examples:[['[255, 165, 13]',"rgb(255,165,13)"],['[0, 0, 0]',"rgb(0,0,0)"]],
   starter:'def format_rgb(rgb):\n    # Write your code here.\n    pass\n',
   fn:'format_rgb',
-  cases:[  // [args_as_python, expected_repr]
-    ['[255, 165, 13]', "'rgb(255,165,13)'"],
-    ['[0, 0, 0]', "'rgb(0,0,0)'"],
-    ['[12, 200, 7]', "'rgb(12,200,7)'"],
-    ['[1, 2, 3]', "'rgb(1,2,3)'"]
-  ],
+  gen(){
+    const c=()=>ri(0,255);
+    const a=[c(),c(),c()], b=[c(),c(),c()];
+    return {spec:{primary:a, secondary:b},
+      examples:[[`[${a.join(', ')}]`, `rgb(${a.join(',')})`],
+                [`[${b.join(', ')}]`, `rgb(${b.join(',')})`]]};
+  },
+  ref:"def _ref(rgb):\n    return 'rgb(' + ','.join(str(v) for v in rgb) + ')'\n",
   harness:`
 def grade(fn, run):
     checks=[]
+    p=list(SPEC['primary']); s=list(SPEC['secondary'])
+    exp=_ref(p); exp2=_ref(s)
     try:
-        r=run('[255, 165, 13]')
+        r=fn(p)
     except Exception as e:
         return [{'name':'Function runs without error','ok':False,'hint':'Your code raised: '+str(e)}]
-    ok_type = isinstance(r,str)
+    ok_type=isinstance(r,str)
     checks.append({'name':'Returns a string (not a list or int)','ok':ok_type,
         'hint':None if ok_type else 'You returned a '+type(r).__name__+'. The task wants one string. Build it with str() and concatenation or an f-string, and return it.'})
     if not ok_type: return checks
-    nospace = ' ' not in r
+    nospace=' ' not in r
     checks.append({'name':'No spaces between values','ok':nospace,
-        'hint':None if nospace else "Your string has spaces: "+repr(r)+". str([255,165,13]) keeps the '[', ']' and spaces. Join the numbers yourself with ',' — e.g. ','.join(str(v) for v in rgb)."})
-    wrapped = r.startswith('rgb(') and r.endswith(')')
-    checks.append({'name':"Wrapped as rgb(...)",'ok':wrapped,
+        'hint':None if nospace else "Your string has spaces: "+repr(r)+". str("+repr(p)+") keeps the brackets and spaces. Join the numbers yourself with ',' — e.g. ','.join(str(v) for v in rgb)."})
+    wrapped=r.startswith('rgb(') and r.endswith(')')
+    checks.append({'name':'Wrapped as rgb(...)','ok':wrapped,
         'hint':None if wrapped else 'Expected the form rgb(...). Got '+repr(r)+'. Wrap the joined numbers: "rgb(" + inner + ")".'})
-    exact = r=='rgb(255,165,13)'
-    checks.append({'name':'Matches expected exactly','ok':exact,
-        'hint':None if exact else 'Expected rgb(255,165,13), got '+repr(r)+'.'})
-    # robustness on a different input
+    exact=r==exp
+    checks.append({'name':'Matches expected exactly ('+exp+')','ok':exact,
+        'hint':None if exact else 'Expected '+exp+', got '+repr(r)+'.'})
     try:
-        r2=run('[0, 0, 0]')
-        rob = r2=='rgb(0,0,0)'
+        r2=fn(s); rob=r2==exp2
     except Exception:
         rob=False
-    checks.append({'name':'Works on a second input (rgb(0,0,0))','ok':rob,
+    checks.append({'name':'Works on a second input ('+exp2+')','ok':rob,
         'hint':None if rob else 'Hardcoding the first example fails other inputs. Build the string from the rgb parameter.'})
     return checks
 `,
   hints:[
     "input() isn't involved here — you're given the list as the rgb parameter. The whole job is turning three numbers into one string.",
     "str([255,165,13]) won't work — it produces \"[255, 165, 13]\" with brackets and spaces. You need to convert EACH number to a string and glue them with commas yourself. The tool for gluing a list into one string is ','.join(...), but join only accepts strings, so convert each int first.",
-    "Skeleton:\n\ninner = ','.join(str(v) for v in rgb)\nreturn 'rgb(' + inner + ')'\n\nThe str(v) inside handles int→str; the ',' is the separator with no spaces."
+    "Skeleton:\n\ninner = ','.join(str(v) for v in rgb)\nreturn 'rgb(' + inner + ')'\n\nThe str(v) inside handles int->str; the ',' is the separator with no spaces."
   ]},
 
 /* 8 */ {type:'code', topic:'modules', prompt:'Complete <code>minutes_to_hours</code>. It accepts an integer number of minutes and returns a float of the equivalent hours (60 minutes = 1 hour). It must use FLOAT division, not integer division.',
-  examples:[['60','1.0'],['30','0.5']],
   starter:'def minutes_to_hours(minutes):\n    # Write your code here.\n    pass\n',
   fn:'minutes_to_hours',
-  cases:[['60','1.0'],['30','0.5'],['90','1.5'],['45','0.75']],
+  gen(){
+    const mult=pick([60,120,180,240,300,360]);
+    const frac=pick([30,45,90,150,75,15,210,135]);
+    return {spec:{primary:mult, frac:frac},
+      examples:[[`${mult}`, pyf(mult/60)],[`${frac}`, pyf(frac/60)]]};
+  },
+  ref:"def _ref(m):\n    return m/60\n",
   harness:`
 def grade(fn, run):
     checks=[]
+    p=SPEC['primary']; frac=SPEC['frac']
     try:
-        r=run('60')
+        r=fn(p)
     except Exception as e:
         return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)}]
-    isf = isinstance(r,float)
+    isf=isinstance(r,float)
     checks.append({'name':'Returns a float','ok':isf,
-        'hint':None if isf else 'Got a '+type(r).__name__+'. Use / (float division), which always yields a float — not // (which floors to an int-like result).'})
-    v60 = abs(r-1.0)<1e-9 if isinstance(r,(int,float)) else False
-    checks.append({'name':'60 minutes -> 1.0','ok':v60,
-        'hint':None if v60 else 'Expected 1.0, got '+repr(r)+'. Divide minutes by 60.'})
+        'hint':None if isf else 'Got a '+type(r).__name__+'. Use / (float division), which always yields a float — not // (which floors).'})
+    v=abs(r-_ref(p))<1e-9 if isinstance(r,(int,float)) else False
+    checks.append({'name':str(p)+' minutes -> '+str(_ref(p)),'ok':v,
+        'hint':None if v else 'Expected '+str(_ref(p))+', got '+repr(r)+'. Divide minutes by 60.'})
     try:
-        r2=minutes_check(run)
-        half = r2
+        rf=fn(frac); half=isinstance(rf,float) and abs(rf-_ref(frac))<1e-9
     except Exception:
         half=False
-    checks.append({'name':'30 minutes -> 0.5 (proves float division)','ok':half,
-        'hint':None if half else '30 // 60 gives 0 (integer division truncates). 30 / 60 gives 0.5. Use a single slash.'})
+    checks.append({'name':str(frac)+' minutes -> '+str(_ref(frac))+' (proves float division)','ok':half,
+        'hint':None if half else str(frac)+' // 60 truncates the fraction. '+str(frac)+' / 60 = '+str(_ref(frac))+'. Use a single slash.'})
     return checks
-def minutes_check(run):
-    r=run('30'); return isinstance(r,float) and abs(r-0.5)<1e-9
 `,
   hints:[
     "The trap is division type. In Python, / and // do different things.",
@@ -257,22 +271,20 @@ def minutes_check(run):
 
 /* 9 */ {type:'mc', topic:'syntax', prompt:'A script captures a snapshot of interface metrics as a single record that must never change after creation, to preserve historical accuracy. Which data structure fits?',
   choices:['Set','List','Dictionary','Tuple'], answer:3,
-  why:'"Never change after creation" = immutable. Tuples are immutable; lists and dicts are mutable. A set is immutable-ish in membership rules but unordered and still mutable (you can add/remove). Tuple is the immutable ordered record.'},
+  why:'"Never change after creation" = immutable. Tuples are immutable; lists and dicts are mutable. A set is unordered and still mutable (you can add/remove). Tuple is the immutable ordered record.'},
 
 /* 10 */ {type:'mc', topic:'syntax', prompt:'Given: <code>readings = [10, 20, 30, 40]</code> — what is the index position of the element 40?',
   choices:['readings[1]','readings[2]','readings[3]','readings[4]'], answer:2,
-  why:'Indexing starts at 0, so 10→0, 20→1, 30→2, 40→3. readings[4] would raise IndexError (past the end).'},
+  why:'Indexing starts at 0, so 10->0, 20->1, 30->2, 40->3. readings[4] would raise IndexError (past the end).'},
 
 /* 11 */ {type:'mc', topic:'syntax', prompt:'Which pair of characteristics describes tuples in Python?',
   choices:['Unordered and unchangeable','Ordered and unchangeable','Unordered and changeable','Ordered and changeable'],
   answer:1, why:'Tuples keep insertion order (ordered) and cannot be modified after creation (unchangeable/immutable). "Unordered" describes sets; "changeable" describes lists.'},
 
 /* 12 */ {type:'code', topic:'modules', prompt:'A list of log dictionaries needs updating. Complete <code>update_logs</code>: for the log whose <code>app</code> is <code>"webserver"</code>, set its <code>level</code> to <code>"ERROR"</code>; for the log whose <code>app</code> is <code>"database"</code>, set its <code>timestamp</code> to <code>"2023-12-07T12:30:00"</code>. Return the updated list.',
-  examples:[['[{"app":"webserver","level":"INFO",...}, {"app":"database","level":"WARN",...}]','webserver level becomes ERROR; database timestamp becomes 2023-12-07T12:30:00']],
+  examples:[['[{"app":"webserver","level":"INFO",...}, {"app":"database",...}]','webserver level becomes ERROR; database timestamp becomes 2023-12-07T12:30:00']],
   starter:'def update_logs(logs):\n    # Write your code here.\n    pass\n',
   fn:'update_logs',
-  cases:[['[{"app":"webserver","level":"INFO","timestamp":"t1"},{"app":"database","level":"WARN","timestamp":"t2"}]',
-          "[{'app':'webserver','level':'ERROR','timestamp':'t1'},{'app':'database','level':'WARN','timestamp':'2023-12-07T12:30:00'}]"]],
   harness:`
 def grade(fn, run):
     checks=[]
@@ -312,34 +324,45 @@ def grade(fn, run):
   answer:2, why:'The user input was stored in name and ok. You must pass the actual variables that hold the values. device/up are the parameter names inside the function, not variables that exist out here.'},
 
 /* 14 */ {type:'code', topic:'control', prompt:'A valid employee ID is a 3-letter UPPERCASE department code followed by a 5-digit number (e.g. <code>HRD00123</code>). Complete <code>validate_id</code> to return <code>True</code> if the ID meets all requirements, else <code>False</code>.',
-  examples:[['"HRD00123"','True'],['"Ops123456"','False'],['"HRD0012"','False']],
   starter:'def validate_id(emp_id):\n    # Write your code here.\n    pass\n',
   fn:'validate_id',
-  cases:[['"HRD00123"','True'],['"Ops123456"','False'],['"HRD0012"','False'],['"ENG00567"','True'],['"eng00567"','False'],['"HR000123"','False']],
+  gen(){
+    const L=()=>String.fromCharCode(65+ri(0,25));
+    const D=()=>String.fromCharCode(48+ri(0,9));
+    const code=L()+L()+L(), num=D()+D()+D()+D()+D();
+    const valid=code+num;
+    const lower=valid.toLowerCase();
+    const short=code+num.slice(0,4);
+    const badcode=code.slice(0,2)+D()+num;
+    const valid2=L()+L()+L()+D()+D()+D()+D()+D();
+    return {spec:{valid, lower, short, badcode, valid2},
+      examples:[[`"${valid}"`,'True'],[`"${lower}"`,'False'],[`"${short}"`,'False']]};
+  },
+  ref:"def _ref(e):\n    return len(e)==8 and e[:3].isalpha() and e[:3].isupper() and e[3:].isdigit()\n",
   harness:`
 def grade(fn, run):
     checks=[]
-    def R(x):
-        try: return run(x)
+    def C(x):
+        try: return fn(x)
         except Exception as e: return 'ERR:'+str(e)
-    a=R('"HRD00123"')
+    a=C(SPEC['valid'])
     if isinstance(a,str) and a.startswith('ERR:'):
         return [{'name':'Function runs','ok':False,'hint':a[4:]}]
-    isbool = isinstance(a,bool)
+    isbool=isinstance(a,bool)
     checks.append({'name':'Returns a Boolean (True/False)','ok':isbool,
         'hint':None if isbool else 'Return the result of your comparisons, not a string. Comparisons and .isupper()/.isdigit() already give True/False.'})
-    c_valid = R('"HRD00123"') is True
-    checks.append({'name':'Accepts a valid ID (HRD00123)','ok':c_valid,
-        'hint':None if c_valid else 'HRD00123 should pass: first 3 chars are uppercase letters, last 5 are digits, total length 8.'})
-    c_len = R('"HRD0012"') is False
-    checks.append({'name':'Rejects wrong length (HRD0012 -> 7 chars)','ok':c_len,
-        'hint':None if c_len else 'Check total length is exactly 8, or that the digit part is exactly 5 long. len(emp_id)==8.'})
-    c_case = R('"eng00567"') is False and R('"ENG00567"') is True
+    c_valid = C(SPEC['valid']) is True
+    checks.append({'name':'Accepts a valid ID ('+SPEC['valid']+')','ok':c_valid,
+        'hint':None if c_valid else SPEC['valid']+' should pass: 3 uppercase letters + 5 digits, total length 8.'})
+    c_len = C(SPEC['short']) is False
+    checks.append({'name':'Rejects wrong length ('+SPEC['short']+' -> 7 chars)','ok':c_len,
+        'hint':None if c_len else 'Check total length is exactly 8, or that the digit part is exactly 5. len(emp_id)==8.'})
+    c_case = C(SPEC['lower']) is False and C(SPEC['valid']) is True
     checks.append({'name':'Enforces UPPERCASE letters','ok':c_case,
-        'hint':None if c_case else 'Use emp_id[:3].isupper() (also .isalpha()) so lowercase codes fail.'})
-    c_dig = R('"HR000123"') is False
+        'hint':None if c_case else 'Use emp_id[:3].isupper() so lowercase codes fail.'})
+    c_dig = C(SPEC['badcode']) is False
     checks.append({'name':'First 3 must be letters, last 5 digits','ok':c_dig,
-        'hint':None if c_dig else 'emp_id[:3].isalpha() and emp_id[3:].isdigit(). "HR0" is not all letters.'})
+        'hint':None if c_dig else 'emp_id[:3].isalpha() and emp_id[3:].isdigit(). A digit in the code part must fail.'})
     return checks
 `,
   hints:[
@@ -365,8 +388,6 @@ def grade(fn, run):
             ['"192.168.1.100","192.168.2.200","255.255.255.0"','192.168.1.100 and 192.168.2.200 are not in the same subnet']],
   starter:"def same_subnet(ip1, ip2, mask):\n    ip1_bin = ''.join(format(int(x),'08b') for x in ip1.split('.'))\n    ip2_bin = ''.join(format(int(x),'08b') for x in ip2.split('.'))\n    mask_bin = ''.join(format(int(x),'08b') for x in mask.split('.'))\n    n = mask_bin.count('1')\n    net1 = ip1_bin[:n]\n    net2 = ip2_bin[:n]\n    yes = f\"{ip1} and {ip2} are in the same subnet\"\n    no  = f\"{ip1} and {ip2} are not in the same subnet\"\n    # Write a conditional that returns yes or no.\n    pass\n",
   fn:'same_subnet',
-  cases:[['"192.168.1.100","192.168.1.200","255.255.255.0"',"'192.168.1.100 and 192.168.1.200 are in the same subnet'"],
-         ['"192.168.1.100","192.168.2.200","255.255.255.0"',"'192.168.1.100 and 192.168.2.200 are not in the same subnet'"]],
   harness:`
 def grade(fn, run):
     checks=[]
@@ -395,7 +416,7 @@ def grade(fn, run):
   code:'total = 0\ncount = 0\nwhile total < 15:\n    count += 1\n    total += count',
   q:'',
   choices:['3','5','7','1'],
-  answer:1, why:'Each pass adds the running count: 1→total1, 2→total3, 3→total6, 4→total10, 5→total15. After the 5th iteration total is 15 and the loop stops. So 5 iterations.'},
+  answer:1, why:'Each pass adds the running count: 1->total1, 2->total3, 3->total6, 4->total10, 5->total15. After the 5th iteration total is 15 and the loop stops. So 5 iterations.'},
 
 /* 19 */ {type:'mc', topic:'control', prompt:'What does this print?',
   code:'total = 0\nvalues = [2, 4, 6, 8]\nfor n in values:\n    if total < 20:\n        total = total + n\nprint(total)',
@@ -404,29 +425,42 @@ def grade(fn, run):
   answer:2, why:'The guard total<20 is checked each pass but only stops adding once total reaches 20. 0+2+4+6+8 = 20; every element is added because total stayed under 20 at each check, ending at 20.'},
 
 /* 20 */ {type:'code', topic:'control', prompt:'Complete <code>identify_high_cpu</code>. Given a list of float CPU percentages, return a list of the INDEX positions of servers with usage greater than 90.',
-  examples:[['[85.0, 92.5, 88.0, 95.2]','[1, 3]'],['[91.0, 88.8, 89.5]','[0]']],
   starter:'def identify_high_cpu(cpu_list):\n    # Write your code here.\n    pass\n',
   fn:'identify_high_cpu',
-  cases:[['[85.0, 92.5, 88.0, 95.2]','[1, 3]'],['[91.0, 88.8, 89.5]','[0]'],['[10.0, 20.0]','[]'],['[90.0, 90.1]','[1]']],
+  gen(){
+    const n=ri(3,5); const arr=[];
+    for(let i=0;i<n;i++){
+      const high=Math.random()<0.45;
+      arr.push(high ? +(90.1+Math.random()*9).toFixed(1) : +(70+Math.random()*19.8).toFixed(1));
+    }
+    if(!arr.some(v=>v>90)) arr[0]=+(95+Math.random()*4).toFixed(1);
+    if(!arr.some(v=>v<=90)) arr[1]=+(80+Math.random()*9).toFixed(1);
+    const exp=arr.map((v,i)=>v>90?i:null).filter(x=>x!==null);
+    const bnd=[90.0, +(90.1+Math.random()).toFixed(1)];
+    return {spec:{primary:arr, boundary:bnd},
+      examples:[[`[${arr.join(', ')}]`, `[${exp.join(', ')}]`],[`[10.0, 20.0]`, `[]`]]};
+  },
+  ref:"def _ref(c):\n    return [i for i,v in enumerate(c) if v>90]\n",
   harness:`
 def grade(fn, run):
     checks=[]
-    def R(x):
-        try: return run(x)
-        except Exception as e: return 'ERR:'+str(e)
-    a=R('[85.0, 92.5, 88.0, 95.2]')
-    if isinstance(a,str) and a.startswith('ERR:'):
-        return [{'name':'Function runs','ok':False,'hint':a[4:]}]
-    islist = isinstance(a,list)
+    p=list(SPEC['primary']); bnd=list(SPEC['boundary'])
+    exp=_ref(p)
+    try:
+        a=fn(p)
+    except Exception as e:
+        return [{'name':'Function runs','ok':False,'hint':'Raised: '+str(e)}]
+    islist=isinstance(a,list)
     checks.append({'name':'Returns a list','ok':islist,'hint':None if islist else 'Collect results in a list and return it.'})
     if not islist: return checks
-    idx = a==[1,3]
-    checks.append({'name':'Returns INDEXES not values ([1, 3])','ok':idx,
-        'hint':None if idx else 'Got '+repr(a)+'. The task wants positions, not the CPU values. Use enumerate() or range(len()) to track the index.'})
-    strict = R('[90.0, 90.1]')==[1]
+    idx = a==exp
+    values_mistake = a==[v for v in p if v>90] and a!=exp
+    checks.append({'name':'Returns INDEXES not values ('+repr(exp)+')','ok':idx,
+        'hint':None if idx else ('Got '+repr(a)+'. Those are the CPU VALUES, not their positions. Use enumerate() to get the index.' if values_mistake else 'Got '+repr(a)+'. Expected the index positions '+repr(exp)+'.')})
+    strict = fn(bnd)==[1]
     checks.append({'name':'Strictly greater than 90 (90.0 excluded)','ok':strict,
         'hint':None if strict else 'Use > 90, not >= 90. Exactly 90.0 should NOT be flagged.'})
-    empty = R('[10.0, 20.0]')==[]
+    empty = fn([10.0,20.0])==[]
     checks.append({'name':'Returns [] when none qualify','ok':empty,
         'hint':None if empty else 'When nothing exceeds 90, the list should be empty.'})
     return checks
@@ -455,24 +489,21 @@ def grade(fn, run):
   starter:'def line_count(filename):\n    f = Open(filename)\n    contents = f.read\n    lines = contents.split("\\n")\n    f.close()\n    return len(line)\n',
   fn:'line_count',
   filesetup:"with open('test.txt','w') as _f:\n    _f.write('Line 1\\nLine 2\\nLine 3')\nwith open('lorem.txt','w') as _f:\n    _f.write('a\\nb\\nc\\nd')\n",
-  cases:[["'test.txt'",'3'],["'lorem.txt'",'4']],
   harness:`
 def grade(fn, run):
     checks=[]
     try:
         r=run("'test.txt'")
     except Exception as e:
-        msg=str(e)
-        h='Raised: '+msg
+        msg=str(e); h='Raised: '+msg
         if 'Open' in msg or 'not defined' in msg:
             h="NameError. Python's file function is lowercase open(), not Open()."
         return [{'name':'Function runs without error','ok':False,'hint':h}]
     is3 = r==3
     checks.append({'name':'test.txt (3 lines) -> 3','ok':is3,
-        'hint':None if is3 else 'Got '+repr(r)+'. Three bugs to find: Open->open, f.read must be CALLED as f.read(), and len(line) references an undefined name — you want len(lines).'})
+        'hint':None if is3 else 'Got '+repr(r)+'. Three bugs: Open->open, f.read must be CALLED as f.read(), and len(line) references an undefined name — you want len(lines).'})
     try:
-        r2=run("'lorem.txt'")
-        is4=r2==4
+        r2=run("'lorem.txt'"); is4=r2==4
     except Exception:
         is4=False
     checks.append({'name':'lorem.txt (4 lines) -> 4','ok':is4,
@@ -494,11 +525,9 @@ def grade(fn, run):
   answer:0, why:"'w' (write) truncates the file to empty and writes fresh — exactly 'discard the old contents'. 'a' would keep old content and append; 'r' can't write; 'x' fails if the file exists."},
 
 /* 26 */ {type:'code', topic:'modules', prompt:'Complete <code>write_config_csv</code> using the <code>csv</code> library. It should write the provided rows to the given file with a header row <code>device_name,ip_address</code>, one row per device. (The file is graded, not stdout.)',
-  examples:[['file becomes:','device_name,ip_address\\nRouter1,192.168.1.1\\nRouter2,192.168.1.2']],
+  examples:[['file becomes:','device_name,ip_address / Router1,192.168.1.1 / Router2,192.168.1.2']],
   starter:"import csv\n\ndef write_config_csv(filename):\n    fieldnames = ['device_name', 'ip_address']\n    data = [\n        {'device_name':'Router1','ip_address':'192.168.1.1'},\n        {'device_name':'Router2','ip_address':'192.168.1.2'}\n    ]\n    # Write the data to the CSV file.\n    # Write your code here.\n    pass\n",
   fn:'write_config_csv',
-  gradefile:'config.csv',
-  cases:[["'config.csv'",'file']],
   harness:`
 def grade(fn, run):
     checks=[]
@@ -537,33 +566,47 @@ def grade(fn, run):
 
 /* 28 */ {type:'mc', topic:'modules', prompt:'A snippet uses <code>with ConnectHandler(**device) as net_connect:</code> to SSH into a network device and push config. Which import provides ConnectHandler?',
   choices:['from netmiko import SSHClient','from configparser import ConnectHandler','from netmiko import ConnectHandler','from paramiko import SSHClient'],
-  answer:2, why:'ConnectHandler is netmiko\'s connection factory: from netmiko import ConnectHandler. paramiko uses SSHClient; configparser is unrelated (INI files).'},
+  answer:2, why:"ConnectHandler is netmiko's connection factory: from netmiko import ConnectHandler. paramiko uses SSHClient; configparser is unrelated (INI files)."},
 
 /* 29 */ {type:'code', topic:'modules', prompt:'Complete <code>find_latest</code>. Given a list of timestamp strings in the format <code>%m/%d/%Y %I:%M %p</code>, parse each into a datetime and return the most recent one as a datetime object.',
-  examples:[["['12/15/2023 08:45 AM', '12/16/2023 11:20 AM', ...]",'datetime for 2023-12-16 11:20:00']],
   starter:"from datetime import datetime\n\ndef find_latest(stamps):\n    date_format = '%m/%d/%Y %I:%M %p'\n    # Convert each string to a datetime, return the most recent.\n    # Write your code here.\n    pass\n",
   fn:'find_latest',
-  cases:[["['12/15/2023 08:45 AM', '12/14/2023 03:30 PM', '12/16/2023 11:20 AM', '12/13/2023 06:15 PM']",
-          "__import__('datetime').datetime(2023,12,16,11,20)"],
-         ["['12/20/2023 02:00 AM', '12/18/2023 10:30 AM', '12/16/2023 07:45 PM']",
-          "__import__('datetime').datetime(2023,12,20,2,0)"]],
+  gen(){
+    const pad=x=>String(x).padStart(2,'0');
+    const mk=()=>{
+      const mo=ri(1,12), da=ri(1,28), yr=2023, h=ri(1,12), mi=ri(0,59), ap=pick(['AM','PM']);
+      let hh = ap==='PM' ? (h===12?12:h+12) : (h===12?0:h);
+      return {s:`${pad(mo)}/${pad(da)}/${yr} ${pad(h)}:${pad(mi)} ${ap}`, key:new Date(yr,mo-1,da,hh,mi), disp:`${yr}-${pad(mo)}-${pad(da)} ${pad(hh)}:${pad(mi)}:00`};
+    };
+    const build=n=>{ const a=[]; for(let i=0;i<n;i++) a.push(mk()); return a; };
+    const g1=build(4), g2=build(3);
+    const latest1=g1.reduce((m,x)=>x.key>m.key?x:m);
+    const list1=g1.map(x=>x.s), list2=g2.map(x=>x.s);
+    return {spec:{primary:list1, secondary:list2},
+      examples:[[`[${list1.map(s=>`'${s}'`).join(', ')}]`, latest1.disp]]};
+  },
+  ref:"from datetime import datetime as _dt\ndef _ref(lst):\n    f='%m/%d/%Y %I:%M %p'\n    return max(_dt.strptime(x,f) for x in lst)\n",
   harness:`
 def grade(fn, run):
     from datetime import datetime
     checks=[]
+    p=list(SPEC['primary']); s=list(SPEC['secondary'])
+    exp=_ref(p); exp2=_ref(s)
     try:
-        r=run("['12/15/2023 08:45 AM', '12/14/2023 03:30 PM', '12/16/2023 11:20 AM', '12/13/2023 06:15 PM']")
+        r=fn(p)
     except Exception as e:
         return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)+'. Use datetime.strptime(s, date_format) to parse each string.'}]
     isdt = isinstance(r, datetime)
     checks.append({'name':'Returns a datetime object','ok':isdt,
-        'hint':None if isdt else 'Got '+type(r).__name__+'. Return the datetime itself, not a string. If you need to print it that is separate.'})
+        'hint':None if isdt else 'Got '+type(r).__name__+'. Return the datetime itself, not a string.'})
     if not isdt: return checks
-    right = r==datetime(2023,12,16,11,20)
-    checks.append({'name':'Finds the most recent (2023-12-16 11:20)','ok':right,
-        'hint':None if right else 'Got '+str(r)+'. Parse them all, then take max(). Note strptime handles AM/PM via %I and %p.'})
-    r2=run("['12/20/2023 02:00 AM', '12/18/2023 10:30 AM', '12/16/2023 07:45 PM']")
-    right2 = r2==datetime(2023,12,20,2,0)
+    right = r==exp
+    checks.append({'name':'Finds the most recent ('+str(exp)+')','ok':right,
+        'hint':None if right else 'Got '+str(r)+'. Parse them all, then take max(). strptime handles AM/PM via %I and %p.'})
+    try:
+        r2=fn(s); right2=r2==exp2
+    except Exception:
+        right2=False
     checks.append({'name':'Works on a second list','ok':right2,
         'hint':None if right2 else 'max() over the parsed datetimes gives the latest regardless of list order.'})
     return checks
@@ -575,36 +618,41 @@ def grade(fn, run):
   ]},
 
 /* 30 */ {type:'code', topic:'modules', prompt:'<code>scan_ports</code> should return a list of (port, status) tuples for ports 0..x. connect_ex returns 0 when a port is OPEN. Fix the logical errors so the statuses are correct. (A mock makes connect_ex always return 0, so every port should read OPEN.)',
-  examples:[['scan_ports(5)',"[(0, 'OPEN'), (1, 'OPEN'), (2, 'OPEN'), (3, 'OPEN'), (4, 'OPEN'), (5, 'OPEN')]"]],
   note:'connect_ex is stubbed to return 0 for all ports in this sandbox.',
   starter:"def scan_ports(x):\n    target_ip = '127.0.0.1'\n    result = []\n    for i in range(0, x):\n        conn = connect_ex((target_ip, i))\n        if conn == 0:\n            result.extend([i, 'CLOSED'])\n        else:\n            result.extend([i, 'OPEN'])\n    return result\n",
   fn:'scan_ports',
   filesetup:"def connect_ex(addr):\n    return 0\n",
-  cases:[['5',"[(0,'OPEN'),(1,'OPEN'),(2,'OPEN'),(3,'OPEN'),(4,'OPEN'),(5,'OPEN')]"]],
+  gen(){
+    const x=ri(3,8);
+    const exp='['+Array.from({length:x+1},(_,i)=>`(${i}, 'OPEN')`).join(', ')+']';
+    return {spec:{x}, examples:[[`scan_ports(${x})`, exp]]};
+  },
+  ref:"def _ref(x):\n    return [(i,'OPEN') for i in range(0,x+1)]\n",
   harness:`
 def grade(fn, run):
     checks=[]
+    x=SPEC['x']; exp=_ref(x)
     try:
-        r=run('5')
+        r=fn(x)
     except Exception as e:
         return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)}]
-    islist = isinstance(r,list)
+    islist=isinstance(r,list)
     checks.append({'name':'Returns a list','ok':islist,'hint':None if islist else 'Return the list.'})
     if not islist: return checks
     tuples = len(r)>0 and all(isinstance(e,tuple) and len(e)==2 for e in r)
     checks.append({'name':'Elements are (port, status) tuples','ok':tuples,
         'hint':None if tuples else "You used .extend([i,'OPEN']) which flattens two items into the list. Use .append((i,'OPEN')) to add ONE tuple. append vs extend."})
-    length = len(r)==6
-    checks.append({'name':'Covers ports 0 through 5 (inclusive)','ok':length,
-        'hint':None if length else "range(0, x) stops at x-1. To include port x, use range(0, x+1). Got "+str(len(r))+" entries."})
-    correct = r==[(0,'OPEN'),(1,'OPEN'),(2,'OPEN'),(3,'OPEN'),(4,'OPEN'),(5,'OPEN')]
+    length = len(r)==x+1
+    checks.append({'name':'Covers ports 0 through '+str(x)+' (inclusive)','ok':length,
+        'hint':None if length else "range(0, x) stops at x-1. To include port x, use range(0, x+1). Got "+str(len(r))+" entries, expected "+str(x+1)+"."})
+    correct = r==exp
     checks.append({'name':'Status logic correct (0 == OPEN)','ok':correct,
         'hint':None if correct else "connect_ex returns 0 for OPEN, but the code labels conn==0 as CLOSED. The branches are swapped. Got: "+repr(r[:2])})
     return checks
 `,
   hints:[
     "Three separate logical bugs. One is about which values go into the list, one is about the range boundary, one is about the if/else labels being backwards.",
-    "Bug 1: .extend([i,'OPEN']) adds two loose items, not a tuple — you want .append((i,'OPEN')). Bug 2: range(0, x) excludes x; the example needs port 5 included, so range(0, x+1). Bug 3: connect_ex returning 0 means OPEN, but the code prints CLOSED for conn==0 — swap the two branches.",
+    "Bug 1: .extend([i,'OPEN']) adds two loose items, not a tuple — you want .append((i,'OPEN')). Bug 2: range(0, x) excludes x; the example needs port x included, so range(0, x+1). Bug 3: connect_ex returning 0 means OPEN, but the code prints CLOSED for conn==0 — swap the two branches.",
     "Fixed loop body:\n\nfor i in range(0, x+1):\n    conn = connect_ex((target_ip, i))\n    if conn == 0:\n        result.append((i, 'OPEN'))\n    else:\n        result.append((i, 'CLOSED'))\nreturn result"
   ]}
 ];
@@ -614,8 +662,10 @@ def grade(fn, run):
 // ---------- state & persistence ----------
 const LS_KEY = 'd522_progress_v1';
 let pyodide = null, pyReady = false;
-let state = { mode:null, order:[], idx:0, answers:{}, shuffle:false };
+let state = { mode:null, order:[], idx:0, answers:{}, specs:{} };
+let shuffleOn = true;
 let history = load();
+function shuffleArr(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
 function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || blank(); }catch(e){ return blank(); } }
 function blank(){ return { perQuestion:{}, attempts:0 }; } // perQuestion[i] = {seen, correct, hintsUsed, lastCorrect}
@@ -643,24 +693,27 @@ async function bootPy(){
   }
 }
 
-// Run a code question: exec student code, then per-case + harness grading.
-function gradeCode(q, userCode){
+// Run a code question: exec student code, inject SPEC + reference, then harness grading.
+function gradeCode(q, qi, userCode){
   if(!pyReady) return {error:'Python runtime still loading — give it a moment.'};
   const setup = q.filesetup ? q.filesetup : '';
-  // Build a python program that: defines helpers, runs student code, then grades.
+  const refCode = q.ref ? q.ref : '';
+  const specObj = (q.gen && state.specs[qi]) ? state.specs[qi].spec : null;
+  const specText = specObj ? JSON.stringify(specObj) : '';   // JSON string, parsed in python
   const prog = `
 import json, io, sys, traceback
 _OUT = io.StringIO()
 _result = {'stdout':'', 'err':None, 'checks':None}
 _ns = {}
-${setup ? '_setup_code = ' + JSON.stringify(setup) : '_setup_code = ""'}
+_setup_code = ${JSON.stringify(setup)}
 _user_code = ${JSON.stringify(userCode)}
 _harness = ${JSON.stringify(q.harness)}
+_ref_code = ${JSON.stringify(refCode)}
+_spec_text = ${JSON.stringify(specText)}
 _fn_name = ${JSON.stringify(q.fn)}
 
 def _run(args_str):
-    call = _fn_name + '(' + args_str + ')'
-    return eval(call, _ns)
+    return eval(_fn_name + '(' + args_str + ')', _ns)
 
 _old = sys.stdout
 sys.stdout = _OUT
@@ -668,6 +721,9 @@ try:
     if _setup_code:
         exec(_setup_code, _ns)
     exec(_user_code, _ns)
+    if _ref_code:
+        exec(_ref_code, _ns)
+    _ns['SPEC'] = json.loads(_spec_text) if _spec_text else None
     exec(_harness, _ns)
     _grade = _ns['grade']
     _checks = _grade(_ns.get(_fn_name), _run)
@@ -718,12 +774,13 @@ function renderMenu(){
   state.mode = null;
   const done = Object.keys(history.perQuestion).length;
   const weak = weakQuestions();
+  const codeCount = QUESTIONS.filter(q=>q.type==='code').length;
   app.innerHTML = `
     <div class="modes">
       <div class="mode-card" data-mode="exam">
         <span class="tag">30 Q · ~3 hr</span>
         <h3>Full practice exam</h3>
-        <p>All 30 in exam order (modules cluster at the end, like the real thing). Immediate per-question feedback with tiered hints on the coding items.</p>
+        <p>${shuffleOn ? 'All 30 in random order. Immediate per-question feedback with tiered hints on the coding items.' : 'All 30 in true exam order (modules cluster at the end, like the real thing). Immediate feedback with tiered hints on coding items.'}</p>
       </div>
       <div class="mode-card" data-mode="review" ${weak.length? '' : 'style="opacity:.55"'}>
         <span class="tag">${weak.length} flagged</span>
@@ -731,17 +788,23 @@ function renderMenu(){
         <p>${weak.length ? 'Drills only the questions you\'ve missed or leaned on hints for. This set shrinks as you get them clean.' : 'Take the exam first — this fills up with whatever you miss.'}</p>
       </div>
       <div class="mode-card" data-mode="coding">
-        <span class="tag">${QUESTIONS.filter(q=>q.type==='code').length} Q</span>
+        <span class="tag">${codeCount} Q</span>
         <h3>Coding questions only</h3>
-        <p>The 8 write/fix-the-code questions — your weakest bucket. Real Python execution, diagnostic checks, 3-level hints.</p>
+        <p>The ${codeCount} write/fix-the-code questions — your weakest bucket. Real Python execution, diagnostic checks, 3-level hints. Six of them reroll their inputs each attempt.</p>
       </div>
     </div>
+    <label style="display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13.5px;color:var(--ink2);cursor:pointer">
+      <input type="checkbox" id="shufToggle" ${shuffleOn?'checked':''} style="width:16px;height:16px;accent-color:var(--accent)">
+      Shuffle question order <span style="color:var(--ink3)">· off = true exam sequence</span>
+    </label>
     ${done ? `<div style="margin-top:16px"><button class="ghost" id="statsBtn" style="font-size:13px">View progress & weak areas</button>
       <button class="ghost" id="resetBtn" style="font-size:13px;margin-left:6px">Reset progress</button></div>` : ''}
   `;
   document.querySelectorAll('.mode-card').forEach(c=>{
     c.onclick = ()=> startMode(c.dataset.mode);
   });
+  const st = document.getElementById('shufToggle');
+  if(st) st.onchange = ()=>{ shuffleOn = st.checked; renderMenu(); };
   const sb = document.getElementById('statsBtn'); if(sb) sb.onclick = renderStats;
   const rb = document.getElementById('resetBtn'); if(rb) rb.onclick = ()=>{ if(confirm('Clear all saved progress?')){ history=blank(); save(); renderMenu(); } };
 }
@@ -759,7 +822,8 @@ function startMode(mode){
   if(mode==='review'){ const w=weakQuestions(); if(!w.length) return; state.order=w; }
   else if(mode==='coding'){ state.order = QUESTIONS.map((q,i)=>i).filter(i=>QUESTIONS[i].type==='code'); }
   else state.order = QUESTIONS.map((q,i)=>i);
-  state.mode = mode; state.idx = 0; state.answers = {};
+  if(shuffleOn) state.order = shuffleArr(state.order.slice());
+  state.mode = mode; state.idx = 0; state.answers = {}; state.specs = {};
   renderQuestion();
 }
 
@@ -780,6 +844,10 @@ function renderQuestion(){
   const topic = TOPICS[q.topic];
   const progress = ((state.idx)/state.order.length)*100;
 
+  // randomized questions: generate a fresh spec once per session (rerollable)
+  if(q.type==='code' && q.gen && !state.specs[qi]) state.specs[qi] = q.gen();
+  const examples = (q.gen && state.specs[qi]) ? state.specs[qi].examples : q.examples;
+
   let body = '';
   if(q.type==='mc') body = renderMC(q, qi, a);
   else body = renderCode(q, qi, a);
@@ -795,7 +863,7 @@ function renderQuestion(){
       <div class="qprompt">${q.prompt}</div>
       ${q.code ? `<pre class="code">${esc(q.code)}</pre>` : ''}
       ${q.q ? `<div class="qprompt" style="margin-top:6px">${q.q}</div>` : ''}
-      ${q.examples ? q.examples.map(ex=>`<div class="example"><b>Example:</b> ${esc(ex[0])} → <span style="color:#7ee787">${esc(ex[1])}</span></div>`).join('') : ''}
+      ${examples ? examples.map(ex=>`<div class="example"><b>Example:</b> ${esc(ex[0])} → <span style="color:#7ee787">${esc(ex[1])}</span></div>`).join('') : ''}
       ${q.note ? `<div class="example" style="color:var(--ink3)">Note: ${esc(q.note)}</div>` : ''}
       ${body}
     </div>
@@ -846,6 +914,7 @@ function renderCode(q, qi, a){
       <button id="runBtn">▷ Run</button>
       <button class="primary" id="submitBtn">Submit for grading</button>
       <button class="ghost" id="hintBtn">Hint${a.hintsUsed?` (${a.hintsUsed}/3)`:''}</button>
+      ${q.gen ? `<button class="ghost" id="rerollBtn" title="Fresh random inputs">↻ New numbers</button>` : ''}
       <button class="ghost" id="resetCodeBtn" style="margin-left:auto">Reset code</button>
     </div>
     <div id="outArea"></div>
@@ -897,7 +966,7 @@ function wireCode(q, qi){
     const ca=document.getElementById('checkArea');
     ca.innerHTML='<div class="verdict" style="background:var(--panel2);color:var(--ink2)">grading…</div>';
     setTimeout(()=>{
-      const r = gradeCode(q, ed.value);
+      const r = gradeCode(q, qi, ed.value);
       if(r.error){ ca.innerHTML=`<div class="out err">${esc(r.error)}</div>`; return; }
       if(r.err){ ca.innerHTML=`<div class="verdict bad">✗ Your code raised an error</div><div class="out err">${esc(r.err)}</div>`;
         a.graded=true; a.correct=false; a.checks=[{name:'Runs without error',ok:false,hint:'Fix the traceback above.'}];
@@ -924,6 +993,13 @@ function wireCode(q, qi){
   document.getElementById('resetCodeBtn').onclick = ()=>{
     ed.value=q.starter; a.code=q.starter; state.answers[qi]=a;
     document.getElementById('outArea').innerHTML='';
+  };
+  const rr = document.getElementById('rerollBtn');
+  if(rr) rr.onclick = ()=>{
+    state.specs[qi] = q.gen();       // fresh inputs
+    a.graded=false; a.checks=null;   // old grading is stale
+    state.answers[qi]=a;
+    renderQuestion();
   };
 }
 
