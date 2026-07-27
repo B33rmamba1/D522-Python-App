@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f1720">
+<title>D522 Python — Practice Exam</title>
+<style>
+:root{
+  --bg:#0f1720; --panel:#161f2b; --panel2:#1d2836; --line:#2a3746;
+  --ink:#e6edf3; --ink2:#9fb0c0; --ink3:#6b7d8f;
+  --accent:#4aa8ff; --accent-dim:#1f3a52;
+  --ok:#3fb950; --ok-dim:#12361d; --bad:#f85149; --bad-dim:#3d1518;
+  --warn:#d29922; --warn-dim:#3a2e10;
+  --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);font-family:var(--sans);-webkit-text-size-adjust:100%}
+body{line-height:1.5;font-size:15px}
+a{color:var(--accent)}
+.wrap{max-width:820px;margin:0 auto;padding:14px 14px 80px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 0 14px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+h1{font-size:17px;margin:0;font-weight:600;letter-spacing:.2px}
+h1 .sub{color:var(--ink3);font-weight:400;font-size:13px}
+.badge{font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:5px;background:var(--panel2);color:var(--ink2);border:1px solid var(--line)}
+button{font-family:var(--sans);cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:7px;padding:8px 12px;font-size:14px;transition:.12s}
+button:hover{border-color:#3a4a5c;background:#22303f}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.primary{background:var(--accent-dim);border-color:#2f5877;color:#cfe6ff}
+button.primary:hover{background:#264862}
+button.ghost{background:transparent}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.spacer{flex:1}
+.hidden{display:none!important}
+
+/* mode select */
+.modes{display:grid;grid-template-columns:1fr;gap:10px}
+.mode-card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:16px;cursor:pointer;transition:.14s}
+.mode-card:hover{border-color:#3a4a5c;background:var(--panel2)}
+.mode-card h3{margin:0 0 5px;font-size:15px}
+.mode-card p{margin:0;color:var(--ink2);font-size:13px;line-height:1.45}
+.mode-card .tag{float:right;font-family:var(--mono);font-size:11px;color:var(--ink3)}
+
+/* progress bar */
+.pbar{height:6px;background:var(--panel2);border-radius:4px;overflow:hidden;margin:4px 0 0}
+.pbar > div{height:100%;background:var(--accent);transition:width .3s}
+
+/* nav dots */
+.dots{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:14px}
+.dot{width:26px;height:26px;border-radius:6px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2);font-size:11px;font-family:var(--mono);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.dot.cur{border-color:var(--accent);color:var(--accent);background:var(--accent-dim)}
+.dot.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-dim)}
+.dot.bad{border-color:var(--bad);color:var(--bad);background:var(--bad-dim)}
+.dot .m{font-size:8px;position:relative;top:-4px;left:1px}
+
+/* question card */
+.qcard{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:16px;margin-bottom:14px}
+.qhead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:10px}
+.qnum{font-family:var(--mono);font-size:12px;color:var(--ink3)}
+.qtopic{font-size:11px;font-family:var(--mono);color:var(--ink3);background:var(--panel2);padding:2px 7px;border-radius:5px;border:1px solid var(--line)}
+.qprompt{font-size:15px;line-height:1.55;margin-bottom:12px}
+.qprompt code{font-family:var(--mono);font-size:13px;background:var(--panel2);padding:1px 5px;border-radius:4px;color:#cfe6ff}
+pre.code{font-family:var(--mono);font-size:13px;line-height:1.5;background:#0b1119;border:1px solid var(--line);border-radius:8px;padding:11px 12px;overflow-x:auto;color:var(--ink);white-space:pre;margin:10px 0}
+pre.code .cm{color:var(--ink3)}
+.example{font-family:var(--mono);font-size:12.5px;background:var(--panel2);border-radius:7px;padding:9px 11px;margin:8px 0;color:var(--ink2);white-space:pre-wrap}
+.example b{color:var(--ink);font-family:var(--sans);font-size:12px}
+
+/* choices */
+.choices{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.choice{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);cursor:pointer;transition:.1s;font-size:14px}
+.choice:hover{border-color:#3a4a5c}
+.choice.sel{border-color:var(--accent);background:var(--accent-dim)}
+.choice.correct{border-color:var(--ok);background:var(--ok-dim)}
+.choice.wrong{border-color:var(--bad);background:var(--bad-dim)}
+.choice .rk{font-family:var(--mono);color:var(--ink3);font-size:12px;flex-shrink:0;margin-top:1px}
+.choice code{font-family:var(--mono);font-size:13px;color:#cfe6ff}
+
+/* code editor */
+.editor-wrap{border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-top:6px;background:#0b1119}
+.editor-bar{display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--panel2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:12px;color:var(--ink3)}
+textarea.editor{width:100%;min-height:200px;resize:vertical;border:none;background:#0b1119;color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.55;padding:11px 12px;outline:none;tab-size:4}
+.out{font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;word-break:break-word;padding:10px 12px;background:#0b1119;border:1px solid var(--line);border-radius:8px;margin-top:8px;max-height:240px;overflow:auto}
+.out.err{color:var(--bad)}
+
+/* checks */
+.check{display:flex;gap:9px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.check:last-child{border-bottom:none}
+.check .ci{flex-shrink:0;font-family:var(--mono);font-weight:600;width:16px}
+.check .ci.ok{color:var(--ok)}.check .ci.bad{color:var(--bad)}
+.check .cn{color:var(--ink)}
+.check .ch{color:var(--ink2);font-size:12.5px;margin-top:3px}
+.verdict{padding:10px 13px;border-radius:8px;font-size:14px;font-weight:600;margin-bottom:10px}
+.verdict.ok{background:var(--ok-dim);color:#7ee787;border:1px solid #1a5a2c}
+.verdict.bad{background:var(--bad-dim);color:#ff9d97;border:1px solid #6a2420}
+
+/* hints */
+.hint{background:var(--warn-dim);border:1px solid #5a4a15;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:13.5px;color:#f0d68a}
+.hint b{color:#ffe9a8}
+.hint pre{font-family:var(--mono);font-size:12.5px;background:#0b1119;border-radius:6px;padding:9px 10px;margin:7px 0 0;white-space:pre-wrap;color:var(--ink2)}
+
+/* results */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:14px 0}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:13px}
+.stat .lbl{font-size:12px;color:var(--ink3);margin-bottom:4px}
+.stat .val{font-size:24px;font-weight:600;font-family:var(--mono)}
+.topic-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.topic-row .tn{flex:1;font-size:13.5px}
+.topic-row .tbar{width:120px;height:7px;background:var(--panel2);border-radius:4px;overflow:hidden}
+.topic-row .tbar > div{height:100%}
+.topic-row .tsc{font-family:var(--mono);font-size:12px;color:var(--ink2);width:44px;text-align:right}
+.foot{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);padding:9px 14px;display:flex;gap:8px;align-items:center;z-index:20}
+.foot .wrap-in{max-width:820px;margin:0 auto;width:100%;display:flex;gap:8px;align-items:center}
+.pyload{font-size:12px;color:var(--ink3);font-family:var(--mono)}
+.dot-load{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--warn);margin-right:5px;animation:pulse 1.2s infinite}
+.dot-load.ready{background:var(--ok);animation:none}
+@keyframes pulse{0%,100%{opacity:.3}50%{opacity:1}}
+@media(max-width:520px){.wrap{padding:10px 10px 80px}.qcard{padding:13px}h1{font-size:15px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>D522 Python <span class="sub">· SKO1 practice</span></h1>
+    <div class="row">
+      <span class="badge" id="pyStatus"><span class="dot-load" id="pyDot"></span>python…</span>
+      <button class="ghost" id="homeBtn" style="font-size:13px;padding:6px 10px">Menu</button>
+    </div>
+  </header>
+  <div id="app"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+<script>
+// D522 SKO1 practice bank — variant questions (not verbatim), grouped by competency.
+// topic buckets map to the real exam weighting: syntax(40) / control(37) / modules(23)
+// type: 'mc' (multiple choice) or 'code' (Pyodide-graded)
+// code questions carry: starter, a python `harness` returning JSON checks, and hints[3]
+
+const TOPICS = {
+  syntax:  {name:'Principles & Syntax', weight:40},
+  control: {name:'Control Structures',  weight:37},
+  modules: {name:'Modules & Files',     weight:23}
+};
+
+const QUESTIONS = [
+/* 1 */ {type:'mc', topic:'modules', prompt:'Which function is used to add data to a file, such as appending to a network configuration log?',
+  choices:['read()','input()','write()','print()'], answer:2,
+  why:'write() outputs data into an open file object. read() pulls data out, input() reads from the keyboard, and print() goes to the console — none of them put data into a file.'},
+
+/* 2 */ {type:'mc', topic:'control', prompt:'Given: <code>def connect(host, port=22):</code> — what is the purpose of this first line?',
+  choices:['Defines a function where host is required and port has a default value','Defines a function where both parameters are optional','Defines a function with no parameters','Defines a function where port is required'],
+  answer:0, why:'A parameter with =value is a default (optional) parameter. host has no default so it is required; port=22 makes port optional. Order matters: required parameters must come before defaulted ones.'},
+
+/* 3 */ {type:'mc', topic:'syntax', prompt:'This snippet raises a syntax error:',
+  code:'def scale(n, factor)\n    return n * factor',
+  q:'Which adjustment fixes it?',
+  choices:['Remove the parentheses after scale','Add a semicolon after the return line','Add a colon after the def line: def scale(n, factor):','Use return(n * factor) with parentheses'],
+  answer:2, why:'Every compound-statement header (def, if, for, while, else) must end in a colon. The parentheses and the return are fine; the missing : after the parameter list is the SyntaxError.'},
+
+/* 4 */ {type:'mc', topic:'syntax', prompt:'Given: <code>devices = ["r01", "sw01", "fw01", "gw01"]</code> — which data structure stores these device names?',
+  choices:['Tuple','Dictionary','Set','List'], answer:3,
+  why:'Square brackets [] with ordered, comma-separated values is a list. Tuples use (), dicts use {key:value}, and sets use {} with bare values.'},
+
+/* 5 */ {type:'mc', topic:'syntax', prompt:'Given:', code:'value = input("Enter a number: ")\nresult = int(value) + 10\nprint(result)',
+  q:'What does <code>result = int(value) + 10</code> accomplish?',
+  choices:['Converts the input to an integer and adds 10 to it','Concatenates a string with an integer','Adds together ten separate numbers','Converts the input to a string and adds 10'],
+  answer:0, why:'input() always returns a string. int() converts that string to an integer so arithmetic works; + 10 then adds ten. Without int(), "5" + 10 would raise a TypeError.'},
+
+/* 6 */ {type:'mc', topic:'control', prompt:'This snippet throws an error:',
+  code:'def check_speed(cur, limit):\n    fast = cur > limit\n    if fast:\n        print(f"{cur} GHz is fast.")\n        else:\n            print(f"{cur} GHz is too slow.")',
+  q:'Which adjustment produces the intended behavior?',
+  choices:['Use >= when comparing cur to limit','Decrease the indentation of the else block so it lines up with if','Increase the indentation of the else block','Remove the f from the f-strings'],
+  answer:1, why:'else must sit at the SAME indentation level as its if. Here else is indented too far (nested under the if body). Dropping it back to align with if fixes the IndentationError.'},
+
+/* 7 */ {type:'code', topic:'modules', prompt:'Complete <code>format_rgb</code>. It accepts a list of integers representing R, G, B values and returns a single string formatted as an RGB color. The formatted string contains NO spaces between values.',
+  examples:[['[255, 165, 13]',"rgb(255,165,13)"],['[0, 0, 0]',"rgb(0,0,0)"]],
+  starter:'def format_rgb(rgb):\n    # Write your code here.\n    pass\n',
+  fn:'format_rgb',
+  cases:[  // [args_as_python, expected_repr]
+    ['[255, 165, 13]', "'rgb(255,165,13)'"],
+    ['[0, 0, 0]', "'rgb(0,0,0)'"],
+    ['[12, 200, 7]', "'rgb(12,200,7)'"],
+    ['[1, 2, 3]', "'rgb(1,2,3)'"]
+  ],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    try:
+        r=run('[255, 165, 13]')
+    except Exception as e:
+        return [{'name':'Function runs without error','ok':False,'hint':'Your code raised: '+str(e)}]
+    ok_type = isinstance(r,str)
+    checks.append({'name':'Returns a string (not a list or int)','ok':ok_type,
+        'hint':None if ok_type else 'You returned a '+type(r).__name__+'. The task wants one string. Build it with str() and concatenation or an f-string, and return it.'})
+    if not ok_type: return checks
+    nospace = ' ' not in r
+    checks.append({'name':'No spaces between values','ok':nospace,
+        'hint':None if nospace else "Your string has spaces: "+repr(r)+". str([255,165,13]) keeps the '[', ']' and spaces. Join the numbers yourself with ',' — e.g. ','.join(str(v) for v in rgb)."})
+    wrapped = r.startswith('rgb(') and r.endswith(')')
+    checks.append({'name':"Wrapped as rgb(...)",'ok':wrapped,
+        'hint':None if wrapped else 'Expected the form rgb(...). Got '+repr(r)+'. Wrap the joined numbers: "rgb(" + inner + ")".'})
+    exact = r=='rgb(255,165,13)'
+    checks.append({'name':'Matches expected exactly','ok':exact,
+        'hint':None if exact else 'Expected rgb(255,165,13), got '+repr(r)+'.'})
+    # robustness on a different input
+    try:
+        r2=run('[0, 0, 0]')
+        rob = r2=='rgb(0,0,0)'
+    except Exception:
+        rob=False
+    checks.append({'name':'Works on a second input (rgb(0,0,0))','ok':rob,
+        'hint':None if rob else 'Hardcoding the first example fails other inputs. Build the string from the rgb parameter.'})
+    return checks
+`,
+  hints:[
+    "input() isn't involved here — you're given the list as the rgb parameter. The whole job is turning three numbers into one string.",
+    "str([255,165,13]) won't work — it produces \"[255, 165, 13]\" with brackets and spaces. You need to convert EACH number to a string and glue them with commas yourself. The tool for gluing a list into one string is ','.join(...), but join only accepts strings, so convert each int first.",
+    "Skeleton:\n\ninner = ','.join(str(v) for v in rgb)\nreturn 'rgb(' + inner + ')'\n\nThe str(v) inside handles int→str; the ',' is the separator with no spaces."
+  ]},
+
+/* 8 */ {type:'code', topic:'modules', prompt:'Complete <code>minutes_to_hours</code>. It accepts an integer number of minutes and returns a float of the equivalent hours (60 minutes = 1 hour). It must use FLOAT division, not integer division.',
+  examples:[['60','1.0'],['30','0.5']],
+  starter:'def minutes_to_hours(minutes):\n    # Write your code here.\n    pass\n',
+  fn:'minutes_to_hours',
+  cases:[['60','1.0'],['30','0.5'],['90','1.5'],['45','0.75']],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    try:
+        r=run('60')
+    except Exception as e:
+        return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)}]
+    isf = isinstance(r,float)
+    checks.append({'name':'Returns a float','ok':isf,
+        'hint':None if isf else 'Got a '+type(r).__name__+'. Use / (float division), which always yields a float — not // (which floors to an int-like result).'})
+    v60 = abs(r-1.0)<1e-9 if isinstance(r,(int,float)) else False
+    checks.append({'name':'60 minutes -> 1.0','ok':v60,
+        'hint':None if v60 else 'Expected 1.0, got '+repr(r)+'. Divide minutes by 60.'})
+    try:
+        r2=minutes_check(run)
+        half = r2
+    except Exception:
+        half=False
+    checks.append({'name':'30 minutes -> 0.5 (proves float division)','ok':half,
+        'hint':None if half else '30 // 60 gives 0 (integer division truncates). 30 / 60 gives 0.5. Use a single slash.'})
+    return checks
+def minutes_check(run):
+    r=run('30'); return isinstance(r,float) and abs(r-0.5)<1e-9
+`,
+  hints:[
+    "The trap is division type. In Python, / and // do different things.",
+    "// is FLOOR division: 30 // 60 = 0, throwing away the fraction. / is TRUE division: 30 / 60 = 0.5 and always returns a float. The task explicitly says float division — so single slash.",
+    "return minutes / 60\n\nThat's the whole function. / guarantees a float even for 60/60 (returns 1.0, not 1)."
+  ]},
+
+/* 9 */ {type:'mc', topic:'syntax', prompt:'A script captures a snapshot of interface metrics as a single record that must never change after creation, to preserve historical accuracy. Which data structure fits?',
+  choices:['Set','List','Dictionary','Tuple'], answer:3,
+  why:'"Never change after creation" = immutable. Tuples are immutable; lists and dicts are mutable. A set is immutable-ish in membership rules but unordered and still mutable (you can add/remove). Tuple is the immutable ordered record.'},
+
+/* 10 */ {type:'mc', topic:'syntax', prompt:'Given: <code>readings = [10, 20, 30, 40]</code> — what is the index position of the element 40?',
+  choices:['readings[1]','readings[2]','readings[3]','readings[4]'], answer:2,
+  why:'Indexing starts at 0, so 10→0, 20→1, 30→2, 40→3. readings[4] would raise IndexError (past the end).'},
+
+/* 11 */ {type:'mc', topic:'syntax', prompt:'Which pair of characteristics describes tuples in Python?',
+  choices:['Unordered and unchangeable','Ordered and unchangeable','Unordered and changeable','Ordered and changeable'],
+  answer:1, why:'Tuples keep insertion order (ordered) and cannot be modified after creation (unchangeable/immutable). "Unordered" describes sets; "changeable" describes lists.'},
+
+/* 12 */ {type:'code', topic:'modules', prompt:'A list of log dictionaries needs updating. Complete <code>update_logs</code>: for the log whose <code>app</code> is <code>"webserver"</code>, set its <code>level</code> to <code>"ERROR"</code>; for the log whose <code>app</code> is <code>"database"</code>, set its <code>timestamp</code> to <code>"2023-12-07T12:30:00"</code>. Return the updated list.',
+  examples:[['[{"app":"webserver","level":"INFO",...}, {"app":"database","level":"WARN",...}]','webserver level becomes ERROR; database timestamp becomes 2023-12-07T12:30:00']],
+  starter:'def update_logs(logs):\n    # Write your code here.\n    pass\n',
+  fn:'update_logs',
+  cases:[['[{"app":"webserver","level":"INFO","timestamp":"t1"},{"app":"database","level":"WARN","timestamp":"t2"}]',
+          "[{'app':'webserver','level':'ERROR','timestamp':'t1'},{'app':'database','level':'WARN','timestamp':'2023-12-07T12:30:00'}]"]],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    data='[{"app":"webserver","level":"INFO","timestamp":"t1"},{"app":"database","level":"WARN","timestamp":"t2"}]'
+    try:
+        r=run(data)
+    except Exception as e:
+        return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)+'. To read a dict value use d["app"]; to change one use d["level"]="ERROR".'}]
+    islist = isinstance(r,list)
+    checks.append({'name':'Returns a list','ok':islist,'hint':None if islist else 'Return the list of dictionaries. Did you forget to return logs?'})
+    if not islist: return checks
+    try:
+        ws=[d for d in r if d.get('app')=='webserver'][0]
+        db=[d for d in r if d.get('app')=='database'][0]
+    except Exception:
+        return checks+[{'name':'Both logs present','ok':False,'hint':'Could not find webserver/database entries in the result.'}]
+    c1 = ws.get('level')=='ERROR'
+    checks.append({'name':"webserver level set to ERROR",'ok':c1,
+        'hint':None if c1 else 'Loop the list, and when d["app"]=="webserver", assign d["level"]="ERROR".'})
+    c2 = db.get('timestamp')=='2023-12-07T12:30:00'
+    checks.append({'name':"database timestamp updated",'ok':c2,
+        'hint':None if c2 else 'When d["app"]=="database", assign d["timestamp"]="2023-12-07T12:30:00".'})
+    c3 = ws.get('timestamp')=='t1' and db.get('level')=='WARN'
+    checks.append({'name':'Untouched fields left alone','ok':c3,
+        'hint':None if c3 else 'Only change the two fields named. Leave the rest as they were.'})
+    return checks
+`,
+  hints:[
+    "You loop the list, check each dictionary's app value, and change one field on a match. Two separate conditions, both inside one loop.",
+    "for log in logs: — then inside, if log['app'] == 'webserver': set log['level']. A separate if for 'database'. Dictionaries are mutable, so changing log['x'] changes it inside the list directly. Don't forget to return logs at the end.",
+    "Skeleton:\n\nfor log in logs:\n    if log['app'] == 'webserver':\n        log['level'] = 'ERROR'\n    if log['app'] == 'database':\n        log['timestamp'] = '2023-12-07T12:30:00'\nreturn logs"
+  ]},
+
+/* 13 */ {type:'mc', topic:'control', prompt:'Given:', code:'def status(device, up):\n    if up:\n        print(f"{device} operational.")\n    else:\n        print(f"{device} down.")\n\nname = input("Device: ")\nok = input("Responding? ") == "yes"',
+  q:'Which call passes the user-entered values correctly?',
+  choices:['status(device, up)','status(device1, device2)','status(name, ok)','status(router1, router2)'],
+  answer:2, why:'The user input was stored in name and ok. You must pass the actual variables that hold the values. device/up are the parameter names inside the function, not variables that exist out here.'},
+
+/* 14 */ {type:'code', topic:'control', prompt:'A valid employee ID is a 3-letter UPPERCASE department code followed by a 5-digit number (e.g. <code>HRD00123</code>). Complete <code>validate_id</code> to return <code>True</code> if the ID meets all requirements, else <code>False</code>.',
+  examples:[['"HRD00123"','True'],['"Ops123456"','False'],['"HRD0012"','False']],
+  starter:'def validate_id(emp_id):\n    # Write your code here.\n    pass\n',
+  fn:'validate_id',
+  cases:[['"HRD00123"','True'],['"Ops123456"','False'],['"HRD0012"','False'],['"ENG00567"','True'],['"eng00567"','False'],['"HR000123"','False']],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    def R(x):
+        try: return run(x)
+        except Exception as e: return 'ERR:'+str(e)
+    a=R('"HRD00123"')
+    if isinstance(a,str) and a.startswith('ERR:'):
+        return [{'name':'Function runs','ok':False,'hint':a[4:]}]
+    isbool = isinstance(a,bool)
+    checks.append({'name':'Returns a Boolean (True/False)','ok':isbool,
+        'hint':None if isbool else 'Return the result of your comparisons, not a string. Comparisons and .isupper()/.isdigit() already give True/False.'})
+    c_valid = R('"HRD00123"') is True
+    checks.append({'name':'Accepts a valid ID (HRD00123)','ok':c_valid,
+        'hint':None if c_valid else 'HRD00123 should pass: first 3 chars are uppercase letters, last 5 are digits, total length 8.'})
+    c_len = R('"HRD0012"') is False
+    checks.append({'name':'Rejects wrong length (HRD0012 -> 7 chars)','ok':c_len,
+        'hint':None if c_len else 'Check total length is exactly 8, or that the digit part is exactly 5 long. len(emp_id)==8.'})
+    c_case = R('"eng00567"') is False and R('"ENG00567"') is True
+    checks.append({'name':'Enforces UPPERCASE letters','ok':c_case,
+        'hint':None if c_case else 'Use emp_id[:3].isupper() (also .isalpha()) so lowercase codes fail.'})
+    c_dig = R('"HR000123"') is False
+    checks.append({'name':'First 3 must be letters, last 5 digits','ok':c_dig,
+        'hint':None if c_dig else 'emp_id[:3].isalpha() and emp_id[3:].isdigit(). "HR0" is not all letters.'})
+    return checks
+`,
+  hints:[
+    "Break the ID into two slices: the first 3 characters and everything after. Then ask three yes/no questions and combine them with and.",
+    "Useful string methods: .isupper() (all letters uppercase), .isalpha() (all letters), .isdigit() (all digits), and len(). The first 3 chars are emp_id[:3]; the rest is emp_id[3:]. All conditions joined with 'and' produce one Boolean.",
+    "Skeleton:\n\ncode = emp_id[:3]\nnum = emp_id[3:]\nreturn len(emp_id)==8 and code.isalpha() and code.isupper() and num.isdigit()\n\nReturn the whole expression — it's already True/False."
+  ]},
+
+/* 15 */ {type:'mc', topic:'control', prompt:'Which error is present?',
+  code:'port = input("Secure? Y/N: ")\nif port == "Y"\n    print("Use 443.")\nelse\n    print("Use 80.")',
+  q:'',
+  choices:['Missing semicolon at the end of the script','Missing colons at the end of the if and else lines','Input should be a number','Indentation should be increased on the if and else lines'],
+  answer:1, why:'Both the if line and the else line are missing their trailing colon. Python does not use semicolons to end statements, and the indentation of the print bodies is already correct.'},
+
+/* 16 */ {type:'mc', topic:'control', prompt:'What does this print?',
+  code:'import math\na = 12\nb = math.sqrt(121)\nif a > b:\n    print("Greater than b")\nelif a < b:\n    print("Less than b")\nelse:\n    print("Equal")',
+  q:'',
+  choices:['Greater than b','Less than b','Equal','Syntax error'],
+  answer:0, why:'math.sqrt(121) = 11.0. 12 > 11.0 is True, so the first branch runs and prints "Greater than b". The elif and else never execute.'},
+
+/* 17 */ {type:'code', topic:'modules', prompt:'Complete <code>same_subnet</code>. Given two IP strings and a subnet mask string, return a sentence stating whether the two IPs are in the same subnet. Predefined result strings are provided in the starter.',
+  examples:[['"192.168.1.100","192.168.1.200","255.255.255.0"','192.168.1.100 and 192.168.1.200 are in the same subnet'],
+            ['"192.168.1.100","192.168.2.200","255.255.255.0"','192.168.1.100 and 192.168.2.200 are not in the same subnet']],
+  starter:"def same_subnet(ip1, ip2, mask):\n    ip1_bin = ''.join(format(int(x),'08b') for x in ip1.split('.'))\n    ip2_bin = ''.join(format(int(x),'08b') for x in ip2.split('.'))\n    mask_bin = ''.join(format(int(x),'08b') for x in mask.split('.'))\n    n = mask_bin.count('1')\n    net1 = ip1_bin[:n]\n    net2 = ip2_bin[:n]\n    yes = f\"{ip1} and {ip2} are in the same subnet\"\n    no  = f\"{ip1} and {ip2} are not in the same subnet\"\n    # Write a conditional that returns yes or no.\n    pass\n",
+  fn:'same_subnet',
+  cases:[['"192.168.1.100","192.168.1.200","255.255.255.0"',"'192.168.1.100 and 192.168.1.200 are in the same subnet'"],
+         ['"192.168.1.100","192.168.2.200","255.255.255.0"',"'192.168.1.100 and 192.168.2.200 are not in the same subnet'"]],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    def R(x):
+        try: return run(x)
+        except Exception as e: return 'ERR:'+str(e)
+    a=R('"192.168.1.100","192.168.1.200","255.255.255.0"')
+    if isinstance(a,str) and a.startswith('ERR:'):
+        return [{'name':'Function runs','ok':False,'hint':a[4:]}]
+    same = a=='192.168.1.100 and 192.168.1.200 are in the same subnet'
+    checks.append({'name':'Same-subnet case returns the "in" sentence','ok':same,
+        'hint':None if same else 'When the network portions match, return yes. Got: '+repr(a)})
+    b=R('"192.168.1.100","192.168.2.200","255.255.255.0"')
+    diff = b=='192.168.1.100 and 192.168.2.200 are not in the same subnet'
+    checks.append({'name':'Different-subnet case returns the "not in" sentence','ok':diff,
+        'hint':None if diff else 'When the network portions differ, return no. Got: '+repr(b)})
+    return checks
+`,
+  hints:[
+    "All the hard work (converting to binary, finding the network portion) is already done for you. net1 and net2 are the two network prefixes. You just compare them.",
+    "If net1 equals net2, the IPs share a subnet — return the yes string; otherwise return the no string. This is a one-line if/else on net1 == net2.",
+    "Replace pass with:\n\nif net1 == net2:\n    return yes\nelse:\n    return no"
+  ]},
+
+/* 18 */ {type:'mc', topic:'control', prompt:'How many iterations run before total equals 15?',
+  code:'total = 0\ncount = 0\nwhile total < 15:\n    count += 1\n    total += count',
+  q:'',
+  choices:['3','5','7','1'],
+  answer:1, why:'Each pass adds the running count: 1→total1, 2→total3, 3→total6, 4→total10, 5→total15. After the 5th iteration total is 15 and the loop stops. So 5 iterations.'},
+
+/* 19 */ {type:'mc', topic:'control', prompt:'What does this print?',
+  code:'total = 0\nvalues = [2, 4, 6, 8]\nfor n in values:\n    if total < 20:\n        total = total + n\nprint(total)',
+  q:'',
+  choices:['10','0','20','12'],
+  answer:2, why:'The guard total<20 is checked each pass but only stops adding once total reaches 20. 0+2+4+6+8 = 20; every element is added because total stayed under 20 at each check, ending at 20.'},
+
+/* 20 */ {type:'code', topic:'control', prompt:'Complete <code>identify_high_cpu</code>. Given a list of float CPU percentages, return a list of the INDEX positions of servers with usage greater than 90.',
+  examples:[['[85.0, 92.5, 88.0, 95.2]','[1, 3]'],['[91.0, 88.8, 89.5]','[0]']],
+  starter:'def identify_high_cpu(cpu_list):\n    # Write your code here.\n    pass\n',
+  fn:'identify_high_cpu',
+  cases:[['[85.0, 92.5, 88.0, 95.2]','[1, 3]'],['[91.0, 88.8, 89.5]','[0]'],['[10.0, 20.0]','[]'],['[90.0, 90.1]','[1]']],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    def R(x):
+        try: return run(x)
+        except Exception as e: return 'ERR:'+str(e)
+    a=R('[85.0, 92.5, 88.0, 95.2]')
+    if isinstance(a,str) and a.startswith('ERR:'):
+        return [{'name':'Function runs','ok':False,'hint':a[4:]}]
+    islist = isinstance(a,list)
+    checks.append({'name':'Returns a list','ok':islist,'hint':None if islist else 'Collect results in a list and return it.'})
+    if not islist: return checks
+    idx = a==[1,3]
+    checks.append({'name':'Returns INDEXES not values ([1, 3])','ok':idx,
+        'hint':None if idx else 'Got '+repr(a)+'. The task wants positions, not the CPU values. Use enumerate() or range(len()) to track the index.'})
+    strict = R('[90.0, 90.1]')==[1]
+    checks.append({'name':'Strictly greater than 90 (90.0 excluded)','ok':strict,
+        'hint':None if strict else 'Use > 90, not >= 90. Exactly 90.0 should NOT be flagged.'})
+    empty = R('[10.0, 20.0]')==[]
+    checks.append({'name':'Returns [] when none qualify','ok':empty,
+        'hint':None if empty else 'When nothing exceeds 90, the list should be empty.'})
+    return checks
+`,
+  hints:[
+    "You need the position of each value, not the value itself. That means tracking an index as you loop.",
+    "enumerate() gives you both at once: for i, usage in enumerate(cpu_list) — i is the index, usage is the float. Check usage > 90 and if so append i. Watch the comparison: greater than 90, so 90.0 is excluded.",
+    "Skeleton:\n\nresult = []\nfor i, usage in enumerate(cpu_list):\n    if usage > 90:\n        result.append(i)\nreturn result"
+  ]},
+
+/* 21 */ {type:'mc', topic:'control', prompt:'This snippet has a logic error causing an infinite loop:',
+  code:'router_id = 100\nwhile router_id <= 100:\n    if router_id % 8 == 0:\n        print(f"{router_id}: audit passed")\n    else:\n        print(f"{router_id}: alert")\n    router_id -= 5',
+  q:'Which replacement fixes the loop while still producing output?',
+  choices:['router_id = 101','while router_id <= 101:','if router_id % 8 = 0:','router_id += 5'],
+  answer:3, why:'router_id starts at 100 and -= 5 makes it smaller forever, so it stays <= 100 endlessly. Changing to += 5 makes it exceed 100 on the first pass — one line of output, then the condition fails and the loop ends.'},
+
+/* 22 */ {type:'mc', topic:'modules', prompt:'This snippet should create directories from a list of names:',
+  code:'import os\ndef make_dirs(names):\n    for name in names:\n        if os.path.exists(name):\n            print("exists")\n        else:\n            try:\n                os.makedirs(name)\n            print("created")\n            except OSError as e:\n                print(e)',
+  q:'Which adjustment fixes it?',
+  choices:['Increase the indentation of the except block to match the try','Move the print("created") line inside (indented under) the try block','Decrease the indentation of both if and else','Remove the try/except entirely'],
+  answer:1, why:'The print("created") sits between try and except at the wrong level — nothing may appear between a try body and its except. Indenting it into the try block makes the structure valid.'},
+
+/* 23 */ {type:'code', topic:'modules', prompt:'<code>line_count</code> should open a text file, read it, and return the number of lines. It has several bugs. Fix it so it returns the line count. (Assume each line except the last ends with a newline.)',
+  examples:[['a file with "Line 1\\nLine 2\\nLine 3"','3'],['a 4-line file','4']],
+  note:'A test file is created for you in the sandbox before each run.',
+  starter:'def line_count(filename):\n    f = Open(filename)\n    contents = f.read\n    lines = contents.split("\\n")\n    f.close()\n    return len(line)\n',
+  fn:'line_count',
+  filesetup:"with open('test.txt','w') as _f:\n    _f.write('Line 1\\nLine 2\\nLine 3')\nwith open('lorem.txt','w') as _f:\n    _f.write('a\\nb\\nc\\nd')\n",
+  cases:[["'test.txt'",'3'],["'lorem.txt'",'4']],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    try:
+        r=run("'test.txt'")
+    except Exception as e:
+        msg=str(e)
+        h='Raised: '+msg
+        if 'Open' in msg or 'not defined' in msg:
+            h="NameError. Python's file function is lowercase open(), not Open()."
+        return [{'name':'Function runs without error','ok':False,'hint':h}]
+    is3 = r==3
+    checks.append({'name':'test.txt (3 lines) -> 3','ok':is3,
+        'hint':None if is3 else 'Got '+repr(r)+'. Three bugs to find: Open->open, f.read must be CALLED as f.read(), and len(line) references an undefined name — you want len(lines).'})
+    try:
+        r2=run("'lorem.txt'")
+        is4=r2==4
+    except Exception:
+        is4=False
+    checks.append({'name':'lorem.txt (4 lines) -> 4','ok':is4,
+        'hint':None if is4 else 'Should return 4. Same fixes apply generally, not just to the first file.'})
+    return checks
+`,
+  hints:[
+    "Read the code slowly, three separate small bugs. Two are 'called vs not called / capitalization', one is a name typo. The error message will point at the first one.",
+    "Bug 1: Open() should be lowercase open(). Bug 2: f.read is the method object — you must CALL it: f.read(). Bug 3: return len(line) references 'line', which was never defined; the variable you built is 'lines' (plural).",
+    "Fixed:\n\ndef line_count(filename):\n    f = open(filename)\n    contents = f.read()\n    lines = contents.split('\\n')\n    f.close()\n    return len(lines)"
+  ]},
+
+/* 24 */ {type:'mc', topic:'modules', prompt:'A new config file must be created, but an error should be raised if the file already exists (to avoid overwriting). Which open() mode does this?',
+  choices:["open('config.conf', 'r')","open('config.conf', 'a')","open('config.conf', 'x')","open('config.conf', 'w')"],
+  answer:2, why:"'x' is exclusive creation: it makes a new file but raises FileExistsError if it already exists. 'w' would silently overwrite, 'a' appends, 'r' only reads."},
+
+/* 25 */ {type:'mc', topic:'modules', prompt:'A config file is rewritten frequently. The old contents are no longer needed and should be discarded when writing. Which open() mode does this?',
+  choices:["'w'","'a'","'r'","'x'"],
+  answer:0, why:"'w' (write) truncates the file to empty and writes fresh — exactly 'discard the old contents'. 'a' would keep old content and append; 'r' can't write; 'x' fails if the file exists."},
+
+/* 26 */ {type:'code', topic:'modules', prompt:'Complete <code>write_config_csv</code> using the <code>csv</code> library. It should write the provided rows to the given file with a header row <code>device_name,ip_address</code>, one row per device. (The file is graded, not stdout.)',
+  examples:[['file becomes:','device_name,ip_address\\nRouter1,192.168.1.1\\nRouter2,192.168.1.2']],
+  starter:"import csv\n\ndef write_config_csv(filename):\n    fieldnames = ['device_name', 'ip_address']\n    data = [\n        {'device_name':'Router1','ip_address':'192.168.1.1'},\n        {'device_name':'Router2','ip_address':'192.168.1.2'}\n    ]\n    # Write the data to the CSV file.\n    # Write your code here.\n    pass\n",
+  fn:'write_config_csv',
+  gradefile:'config.csv',
+  cases:[["'config.csv'",'file']],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    import os
+    try:
+        if os.path.exists('config.csv'): os.remove('config.csv')
+    except Exception: pass
+    try:
+        run("'config.csv'")
+    except Exception as e:
+        return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)}]
+    made = os.path.exists('config.csv')
+    checks.append({'name':'Creates config.csv','ok':made,'hint':None if made else "Open the file with open(filename,'w', newline='') and write to it."})
+    if not made: return checks
+    with open('config.csv') as f:
+        content=f.read()
+    lines=[l for l in content.split('\\n') if l!='']
+    hdr = len(lines)>0 and lines[0].strip()=='device_name,ip_address'
+    checks.append({'name':'Header row is device_name,ip_address','ok':hdr,
+        'hint':None if hdr else 'First line should be the header. With DictWriter, call writer.writeheader(). Got: '+repr(lines[0] if lines else '')})
+    r1 = any(l.strip()=='Router1,192.168.1.1' for l in lines)
+    r2 = any(l.strip()=='Router2,192.168.1.2' for l in lines)
+    checks.append({'name':'Both device rows written','ok':r1 and r2,
+        'hint':None if (r1 and r2) else 'Write each dict as a row. With DictWriter, writer.writerows(data).'})
+    return checks
+`,
+  hints:[
+    "The csv library's DictWriter is built exactly for a list of dictionaries. You open the file, make a DictWriter with the fieldnames, write the header, then write the rows.",
+    "Pattern: open the file in write mode, create csv.DictWriter(file, fieldnames=fieldnames), call .writeheader(), then .writerows(data). Use newline='' in open() so you don't get blank lines between rows on some systems.",
+    "Skeleton:\n\nwith open(filename, 'w', newline='') as f:\n    writer = csv.DictWriter(f, fieldnames=fieldnames)\n    writer.writeheader()\n    writer.writerows(data)"
+  ]},
+
+/* 27 */ {type:'mc', topic:'modules', prompt:'Given a function that creates a socket with <code>socket.socket(socket.AF_INET, socket.SOCK_STREAM)</code>, sets a timeout, connects, and closes — which library must be imported?',
+  choices:['os','math','socket','random'],
+  answer:2, why:'The code calls socket.socket(...) and socket.AF_INET etc., so it needs import socket. The others provide unrelated functionality.'},
+
+/* 28 */ {type:'mc', topic:'modules', prompt:'A snippet uses <code>with ConnectHandler(**device) as net_connect:</code> to SSH into a network device and push config. Which import provides ConnectHandler?',
+  choices:['from netmiko import SSHClient','from configparser import ConnectHandler','from netmiko import ConnectHandler','from paramiko import SSHClient'],
+  answer:2, why:'ConnectHandler is netmiko\'s connection factory: from netmiko import ConnectHandler. paramiko uses SSHClient; configparser is unrelated (INI files).'},
+
+/* 29 */ {type:'code', topic:'modules', prompt:'Complete <code>find_latest</code>. Given a list of timestamp strings in the format <code>%m/%d/%Y %I:%M %p</code>, parse each into a datetime and return the most recent one as a datetime object.',
+  examples:[["['12/15/2023 08:45 AM', '12/16/2023 11:20 AM', ...]",'datetime for 2023-12-16 11:20:00']],
+  starter:"from datetime import datetime\n\ndef find_latest(stamps):\n    date_format = '%m/%d/%Y %I:%M %p'\n    # Convert each string to a datetime, return the most recent.\n    # Write your code here.\n    pass\n",
+  fn:'find_latest',
+  cases:[["['12/15/2023 08:45 AM', '12/14/2023 03:30 PM', '12/16/2023 11:20 AM', '12/13/2023 06:15 PM']",
+          "__import__('datetime').datetime(2023,12,16,11,20)"],
+         ["['12/20/2023 02:00 AM', '12/18/2023 10:30 AM', '12/16/2023 07:45 PM']",
+          "__import__('datetime').datetime(2023,12,20,2,0)"]],
+  harness:`
+def grade(fn, run):
+    from datetime import datetime
+    checks=[]
+    try:
+        r=run("['12/15/2023 08:45 AM', '12/14/2023 03:30 PM', '12/16/2023 11:20 AM', '12/13/2023 06:15 PM']")
+    except Exception as e:
+        return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)+'. Use datetime.strptime(s, date_format) to parse each string.'}]
+    isdt = isinstance(r, datetime)
+    checks.append({'name':'Returns a datetime object','ok':isdt,
+        'hint':None if isdt else 'Got '+type(r).__name__+'. Return the datetime itself, not a string. If you need to print it that is separate.'})
+    if not isdt: return checks
+    right = r==datetime(2023,12,16,11,20)
+    checks.append({'name':'Finds the most recent (2023-12-16 11:20)','ok':right,
+        'hint':None if right else 'Got '+str(r)+'. Parse them all, then take max(). Note strptime handles AM/PM via %I and %p.'})
+    r2=run("['12/20/2023 02:00 AM', '12/18/2023 10:30 AM', '12/16/2023 07:45 PM']")
+    right2 = r2==datetime(2023,12,20,2,0)
+    checks.append({'name':'Works on a second list','ok':right2,
+        'hint':None if right2 else 'max() over the parsed datetimes gives the latest regardless of list order.'})
+    return checks
+`,
+  hints:[
+    "Two steps: turn every string into a datetime, then pick the biggest. datetimes compare directly, so the biggest is the most recent.",
+    "datetime.strptime(s, date_format) parses one string into a datetime. Do that for every string (a loop or comprehension), collect them in a list, then max() returns the latest. The date_format is already given to you.",
+    "Skeleton:\n\nparsed = [datetime.strptime(s, date_format) for s in stamps]\nreturn max(parsed)"
+  ]},
+
+/* 30 */ {type:'code', topic:'modules', prompt:'<code>scan_ports</code> should return a list of (port, status) tuples for ports 0..x. connect_ex returns 0 when a port is OPEN. Fix the logical errors so the statuses are correct. (A mock makes connect_ex always return 0, so every port should read OPEN.)',
+  examples:[['scan_ports(5)',"[(0, 'OPEN'), (1, 'OPEN'), (2, 'OPEN'), (3, 'OPEN'), (4, 'OPEN'), (5, 'OPEN')]"]],
+  note:'connect_ex is stubbed to return 0 for all ports in this sandbox.',
+  starter:"def scan_ports(x):\n    target_ip = '127.0.0.1'\n    result = []\n    for i in range(0, x):\n        conn = connect_ex((target_ip, i))\n        if conn == 0:\n            result.extend([i, 'CLOSED'])\n        else:\n            result.extend([i, 'OPEN'])\n    return result\n",
+  fn:'scan_ports',
+  filesetup:"def connect_ex(addr):\n    return 0\n",
+  cases:[['5',"[(0,'OPEN'),(1,'OPEN'),(2,'OPEN'),(3,'OPEN'),(4,'OPEN'),(5,'OPEN')]"]],
+  harness:`
+def grade(fn, run):
+    checks=[]
+    try:
+        r=run('5')
+    except Exception as e:
+        return [{'name':'Function runs without error','ok':False,'hint':'Raised: '+str(e)}]
+    islist = isinstance(r,list)
+    checks.append({'name':'Returns a list','ok':islist,'hint':None if islist else 'Return the list.'})
+    if not islist: return checks
+    tuples = len(r)>0 and all(isinstance(e,tuple) and len(e)==2 for e in r)
+    checks.append({'name':'Elements are (port, status) tuples','ok':tuples,
+        'hint':None if tuples else "You used .extend([i,'OPEN']) which flattens two items into the list. Use .append((i,'OPEN')) to add ONE tuple. append vs extend."})
+    length = len(r)==6
+    checks.append({'name':'Covers ports 0 through 5 (inclusive)','ok':length,
+        'hint':None if length else "range(0, x) stops at x-1. To include port x, use range(0, x+1). Got "+str(len(r))+" entries."})
+    correct = r==[(0,'OPEN'),(1,'OPEN'),(2,'OPEN'),(3,'OPEN'),(4,'OPEN'),(5,'OPEN')]
+    checks.append({'name':'Status logic correct (0 == OPEN)','ok':correct,
+        'hint':None if correct else "connect_ex returns 0 for OPEN, but the code labels conn==0 as CLOSED. The branches are swapped. Got: "+repr(r[:2])})
+    return checks
+`,
+  hints:[
+    "Three separate logical bugs. One is about which values go into the list, one is about the range boundary, one is about the if/else labels being backwards.",
+    "Bug 1: .extend([i,'OPEN']) adds two loose items, not a tuple — you want .append((i,'OPEN')). Bug 2: range(0, x) excludes x; the example needs port 5 included, so range(0, x+1). Bug 3: connect_ex returning 0 means OPEN, but the code prints CLOSED for conn==0 — swap the two branches.",
+    "Fixed loop body:\n\nfor i in range(0, x+1):\n    conn = connect_ex((target_ip, i))\n    if conn == 0:\n        result.append((i, 'OPEN'))\n    else:\n        result.append((i, 'CLOSED'))\nreturn result"
+  ]}
+];
+
+</script>
+<script>
+// ---------- state & persistence ----------
+const LS_KEY = 'd522_progress_v1';
+let pyodide = null, pyReady = false;
+let state = { mode:null, order:[], idx:0, answers:{}, shuffle:false };
+let history = load();
+
+function load(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)) || blank(); }catch(e){ return blank(); } }
+function blank(){ return { perQuestion:{}, attempts:0 }; } // perQuestion[i] = {seen, correct, hintsUsed, lastCorrect}
+function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(history)); }catch(e){} }
+
+function recordResult(i, correct, hintsUsed){
+  const pq = history.perQuestion[i] || {seen:0, correct:0, wrong:0, hintsUsed:0};
+  pq.seen++;
+  if(correct) pq.correct++; else pq.wrong++;
+  pq.hintsUsed += hintsUsed;
+  pq.lastCorrect = correct;
+  history.perQuestion[i] = pq;
+  save();
+}
+
+// ---------- pyodide bootstrap ----------
+async function bootPy(){
+  try{
+    pyodide = await loadPyodide({ indexURL:'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/' });
+    pyReady = true;
+    document.getElementById('pyDot').classList.add('ready');
+    document.getElementById('pyStatus').innerHTML = '<span class="dot-load ready"></span>python ready';
+  }catch(e){
+    document.getElementById('pyStatus').textContent = 'python failed to load';
+  }
+}
+
+// Run a code question: exec student code, then per-case + harness grading.
+function gradeCode(q, userCode){
+  if(!pyReady) return {error:'Python runtime still loading — give it a moment.'};
+  const setup = q.filesetup ? q.filesetup : '';
+  // Build a python program that: defines helpers, runs student code, then grades.
+  const prog = `
+import json, io, sys, traceback
+_OUT = io.StringIO()
+_result = {'stdout':'', 'err':None, 'checks':None}
+_ns = {}
+${setup ? '_setup_code = ' + JSON.stringify(setup) : '_setup_code = ""'}
+_user_code = ${JSON.stringify(userCode)}
+_harness = ${JSON.stringify(q.harness)}
+_fn_name = ${JSON.stringify(q.fn)}
+
+def _run(args_str):
+    call = _fn_name + '(' + args_str + ')'
+    return eval(call, _ns)
+
+_old = sys.stdout
+sys.stdout = _OUT
+try:
+    if _setup_code:
+        exec(_setup_code, _ns)
+    exec(_user_code, _ns)
+    exec(_harness, _ns)
+    _grade = _ns['grade']
+    _checks = _grade(_ns.get(_fn_name), _run)
+    _result['checks'] = _checks
+except Exception:
+    _result['err'] = traceback.format_exc()
+finally:
+    sys.stdout = _old
+    _result['stdout'] = _OUT.getvalue()
+json.dumps(_result)
+`;
+  try{
+    const raw = pyodide.runPython(prog);
+    return JSON.parse(raw);
+  }catch(e){
+    return {error:String(e)};
+  }
+}
+
+// Free-run (student hits "Run" to see output) without grading.
+function runCode(q, userCode){
+  if(!pyReady) return {error:'Python runtime still loading.'};
+  const setup = q.filesetup ? q.filesetup : '';
+  const prog = `
+import json, io, sys, traceback
+_OUT=io.StringIO(); _ns={}; _err=None
+_setup=${JSON.stringify(setup)}
+_code=${JSON.stringify(userCode)}
+_old=sys.stdout; sys.stdout=_OUT
+try:
+    if _setup: exec(_setup,_ns)
+    exec(_code,_ns)
+except Exception:
+    _err=traceback.format_exc()
+finally:
+    sys.stdout=_old
+json.dumps({'stdout':_OUT.getvalue(),'err':_err})
+`;
+  try{ return JSON.parse(pyodide.runPython(prog)); }
+  catch(e){ return {error:String(e)}; }
+}
+
+// ---------- rendering ----------
+const app = document.getElementById('app');
+const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function renderMenu(){
+  state.mode = null;
+  const done = Object.keys(history.perQuestion).length;
+  const weak = weakQuestions();
+  app.innerHTML = `
+    <div class="modes">
+      <div class="mode-card" data-mode="exam">
+        <span class="tag">30 Q · ~3 hr</span>
+        <h3>Full practice exam</h3>
+        <p>All 30 in exam order (modules cluster at the end, like the real thing). Immediate per-question feedback with tiered hints on the coding items.</p>
+      </div>
+      <div class="mode-card" data-mode="review" ${weak.length? '' : 'style="opacity:.55"'}>
+        <span class="tag">${weak.length} flagged</span>
+        <h3>Focused review</h3>
+        <p>${weak.length ? 'Drills only the questions you\'ve missed or leaned on hints for. This set shrinks as you get them clean.' : 'Take the exam first — this fills up with whatever you miss.'}</p>
+      </div>
+      <div class="mode-card" data-mode="coding">
+        <span class="tag">${QUESTIONS.filter(q=>q.type==='code').length} Q</span>
+        <h3>Coding questions only</h3>
+        <p>The 8 write/fix-the-code questions — your weakest bucket. Real Python execution, diagnostic checks, 3-level hints.</p>
+      </div>
+    </div>
+    ${done ? `<div style="margin-top:16px"><button class="ghost" id="statsBtn" style="font-size:13px">View progress & weak areas</button>
+      <button class="ghost" id="resetBtn" style="font-size:13px;margin-left:6px">Reset progress</button></div>` : ''}
+  `;
+  document.querySelectorAll('.mode-card').forEach(c=>{
+    c.onclick = ()=> startMode(c.dataset.mode);
+  });
+  const sb = document.getElementById('statsBtn'); if(sb) sb.onclick = renderStats;
+  const rb = document.getElementById('resetBtn'); if(rb) rb.onclick = ()=>{ if(confirm('Clear all saved progress?')){ history=blank(); save(); renderMenu(); } };
+}
+
+function weakQuestions(){
+  // flagged if last attempt wrong, OR ever used hints, OR never gotten correct
+  return QUESTIONS.map((q,i)=>i).filter(i=>{
+    const pq = history.perQuestion[i];
+    if(!pq) return false;
+    return pq.lastCorrect===false || pq.hintsUsed>0 || pq.correct===0;
+  });
+}
+
+function startMode(mode){
+  if(mode==='review'){ const w=weakQuestions(); if(!w.length) return; state.order=w; }
+  else if(mode==='coding'){ state.order = QUESTIONS.map((q,i)=>i).filter(i=>QUESTIONS[i].type==='code'); }
+  else state.order = QUESTIONS.map((q,i)=>i);
+  state.mode = mode; state.idx = 0; state.answers = {};
+  renderQuestion();
+}
+
+function renderDots(){
+  return `<div class="dots">${state.order.map((qi,pos)=>{
+    const a = state.answers[qi];
+    let cls='dot'; if(pos===state.idx) cls+=' cur';
+    else if(a && a.graded){ cls += a.correct ? ' ok' : ' bad'; }
+    const m = a && a.hintsUsed ? `<span class="m">h${a.hintsUsed}</span>` : '';
+    return `<button class="${cls}" data-pos="${pos}">${pos+1}${m}</button>`;
+  }).join('')}</div>`;
+}
+
+function renderQuestion(){
+  const qi = state.order[state.idx];
+  const q = QUESTIONS[qi];
+  const a = state.answers[qi] || {graded:false, hintsUsed:0};
+  const topic = TOPICS[q.topic];
+  const progress = ((state.idx)/state.order.length)*100;
+
+  let body = '';
+  if(q.type==='mc') body = renderMC(q, qi, a);
+  else body = renderCode(q, qi, a);
+
+  app.innerHTML = `
+    ${renderDots()}
+    <div class="pbar"><div style="width:${progress}%"></div></div>
+    <div class="qcard">
+      <div class="qhead">
+        <span class="qnum">Question ${state.idx+1} of ${state.order.length}</span>
+        <span class="qtopic">${topic.name}</span>
+      </div>
+      <div class="qprompt">${q.prompt}</div>
+      ${q.code ? `<pre class="code">${esc(q.code)}</pre>` : ''}
+      ${q.q ? `<div class="qprompt" style="margin-top:6px">${q.q}</div>` : ''}
+      ${q.examples ? q.examples.map(ex=>`<div class="example"><b>Example:</b> ${esc(ex[0])} → <span style="color:#7ee787">${esc(ex[1])}</span></div>`).join('') : ''}
+      ${q.note ? `<div class="example" style="color:var(--ink3)">Note: ${esc(q.note)}</div>` : ''}
+      ${body}
+    </div>
+  `;
+  // dot nav
+  document.querySelectorAll('.dot').forEach(d=> d.onclick = ()=>{ state.idx = parseInt(d.dataset.pos); renderQuestion(); });
+  wireFooter();
+  if(q.type==='mc') wireMC(q, qi);
+  else wireCode(q, qi);
+}
+
+function renderMC(q, qi, a){
+  return `<div class="choices">${q.choices.map((c,ci)=>{
+    let cls='choice';
+    if(a.graded){
+      if(ci===q.answer) cls+=' correct';
+      else if(ci===a.choice) cls+=' wrong';
+    } else if(a.choice===ci) cls+=' sel';
+    const rk = String.fromCharCode(65+ci);
+    const isCode = /[(){}\[\]=<>]|open\(|numbers|readings|status\(/.test(c);
+    return `<div class="${cls}" data-ci="${ci}"><span class="rk">${rk}</span><span>${isCode?`<code>${esc(c)}</code>`:esc(c)}</span></div>`;
+  }).join('')}</div>
+  ${a.graded ? `<div class="hint" style="background:var(--panel2);border-color:var(--line);color:var(--ink2);margin-top:12px"><b style="color:var(--ink)">Why:</b> ${esc(q.why)}</div>` : ''}`;
+}
+
+function wireMC(q, qi){
+  const a = state.answers[qi] || {graded:false, hintsUsed:0};
+  if(a.graded) return;
+  document.querySelectorAll('.choice').forEach(el=>{
+    el.onclick = ()=>{
+      a.choice = parseInt(el.dataset.ci);
+      state.answers[qi] = a;
+      document.querySelectorAll('.choice').forEach(x=>x.classList.remove('sel'));
+      el.classList.add('sel');
+      document.getElementById('checkBtn').disabled = false;
+    };
+  });
+}
+
+function renderCode(q, qi, a){
+  const code = a.code !== undefined ? a.code : q.starter;
+  return `
+    <div class="editor-wrap">
+      <div class="editor-bar"><span>main.py</span></div>
+      <textarea class="editor" id="editor" spellcheck="false">${esc(code)}</textarea>
+    </div>
+    <div class="row" style="margin-top:8px">
+      <button id="runBtn">▷ Run</button>
+      <button class="primary" id="submitBtn">Submit for grading</button>
+      <button class="ghost" id="hintBtn">Hint${a.hintsUsed?` (${a.hintsUsed}/3)`:''}</button>
+      <button class="ghost" id="resetCodeBtn" style="margin-left:auto">Reset code</button>
+    </div>
+    <div id="outArea"></div>
+    <div id="hintArea">${a.hintsUsed ? renderHints(q, a.hintsUsed) : ''}</div>
+    <div id="checkArea">${a.checks ? renderChecks(a.checks, a.correct) : ''}</div>
+  `;
+}
+
+function renderHints(q, n){
+  let h='';
+  for(let k=0;k<n && k<q.hints.length;k++){
+    const label = ['Nudge','Concept','Skeleton'][k] || `Hint ${k+1}`;
+    const parts = q.hints[k].split('\n\n');
+    h += `<div class="hint"><b>${label}:</b> ${esc(parts[0])}${parts[1]?`<pre>${esc(parts.slice(1).join('\n\n'))}</pre>`:''}</div>`;
+  }
+  return h;
+}
+
+function renderChecks(checks, correct){
+  const allOk = checks.every(c=>c.ok);
+  let h = `<div class="verdict ${allOk?'ok':'bad'}">${allOk?'✓ All checks passed':'✗ Not passing yet — see below'}</div>`;
+  h += checks.map(c=>`<div class="check">
+      <span class="ci ${c.ok?'ok':'bad'}">${c.ok?'✓':'✗'}</span>
+      <div><div class="cn">${esc(c.name)}</div>${c.hint?`<div class="ch">${esc(c.hint)}</div>`:''}</div>
+    </div>`).join('');
+  return h;
+}
+
+function wireCode(q, qi){
+  const a = state.answers[qi] || {graded:false, hintsUsed:0};
+  const ed = document.getElementById('editor');
+  ed.addEventListener('input', ()=>{ a.code = ed.value; state.answers[qi]=a; });
+  ed.addEventListener('keydown', e=>{
+    if(e.key==='Tab'){ e.preventDefault(); const s=ed.selectionStart,t=ed.selectionEnd;
+      ed.value=ed.value.slice(0,s)+'    '+ed.value.slice(t); ed.selectionStart=ed.selectionEnd=s+4;
+      a.code=ed.value; state.answers[qi]=a; }
+  });
+  document.getElementById('runBtn').onclick = ()=>{
+    const out=document.getElementById('outArea');
+    out.innerHTML='<div class="out" style="color:var(--ink3)">running…</div>';
+    setTimeout(()=>{
+      const r = runCode(q, ed.value);
+      if(r.error){ out.innerHTML=`<div class="out err">${esc(r.error)}</div>`; return; }
+      let txt = r.stdout||''; if(r.err) txt += (txt?'\n':'')+r.err;
+      out.innerHTML = `<div class="out ${r.err?'err':''}">${esc(txt||'(no output — this question is graded on the function\'s return value, not printing. Use Submit.)')}</div>`;
+    },20);
+  };
+  document.getElementById('submitBtn').onclick = ()=>{
+    const ca=document.getElementById('checkArea');
+    ca.innerHTML='<div class="verdict" style="background:var(--panel2);color:var(--ink2)">grading…</div>';
+    setTimeout(()=>{
+      const r = gradeCode(q, ed.value);
+      if(r.error){ ca.innerHTML=`<div class="out err">${esc(r.error)}</div>`; return; }
+      if(r.err){ ca.innerHTML=`<div class="verdict bad">✗ Your code raised an error</div><div class="out err">${esc(r.err)}</div>`;
+        a.graded=true; a.correct=false; a.checks=[{name:'Runs without error',ok:false,hint:'Fix the traceback above.'}];
+        state.answers[qi]=a; recordResult(qi,false,a.hintsUsed); renderDots(); return; }
+      const checks = r.checks||[];
+      const correct = checks.length>0 && checks.every(c=>c.ok);
+      a.graded=true; a.correct=correct; a.checks=checks; a.code=ed.value;
+      state.answers[qi]=a;
+      recordResult(qi, correct, a.hintsUsed);
+      ca.innerHTML = renderChecks(checks, correct);
+      // refresh dots
+      const dotsEl = document.querySelector('.dots');
+      if(dotsEl){ const tmp=document.createElement('div'); tmp.innerHTML=renderDots(); dotsEl.replaceWith(tmp.firstElementChild);
+        document.querySelectorAll('.dot').forEach(d=> d.onclick=()=>{state.idx=parseInt(d.dataset.pos); renderQuestion();}); }
+    },30);
+  };
+  document.getElementById('hintBtn').onclick = ()=>{
+    if(a.hintsUsed>=3) return;
+    a.hintsUsed++; state.answers[qi]=a;
+    document.getElementById('hintArea').innerHTML = renderHints(q, a.hintsUsed);
+    document.getElementById('hintBtn').textContent = `Hint (${a.hintsUsed}/3)`;
+    if(a.hintsUsed>=3) document.getElementById('hintBtn').disabled=true;
+  };
+  document.getElementById('resetCodeBtn').onclick = ()=>{
+    ed.value=q.starter; a.code=q.starter; state.answers[qi]=a;
+    document.getElementById('outArea').innerHTML='';
+  };
+}
+
+// MC grade button lives in footer
+function wireFooter(){
+  const qi = state.order[state.idx];
+  const q = QUESTIONS[qi];
+  const a = state.answers[qi] || {};
+  // build footer
+  let foot = document.getElementById('foot');
+  if(!foot){ foot=document.createElement('div'); foot.id='foot'; foot.className='foot'; document.body.appendChild(foot); }
+  const last = state.idx===state.order.length-1;
+  const showCheck = q.type==='mc' && !a.graded;
+  foot.innerHTML = `<div class="wrap-in">
+    <button class="ghost" id="prevBtn" ${state.idx===0?'disabled':''}>← Prev</button>
+    ${showCheck ? `<button class="primary" id="checkBtn" ${a.choice===undefined?'disabled':''}>Check answer</button>`:''}
+    <div class="spacer"></div>
+    ${last ? `<button class="primary" id="finishBtn">Finish →</button>` : `<button id="nextBtn">Next →</button>`}
+  </div>`;
+  const pb=document.getElementById('prevBtn'); if(pb) pb.onclick=()=>{ state.idx--; renderQuestion(); };
+  const nb=document.getElementById('nextBtn'); if(nb) nb.onclick=()=>{ state.idx++; renderQuestion(); };
+  const fb=document.getElementById('finishBtn'); if(fb) fb.onclick=renderResults;
+  const cb=document.getElementById('checkBtn');
+  if(cb) cb.onclick=()=>{
+    const aa = state.answers[qi];
+    aa.graded=true; aa.correct = aa.choice===q.answer;
+    state.answers[qi]=aa;
+    recordResult(qi, aa.correct, 0);
+    renderQuestion();
+  };
+}
+
+// ---------- results ----------
+function renderResults(){
+  const graded = state.order.filter(qi=>state.answers[qi] && state.answers[qi].graded);
+  const correct = graded.filter(qi=>state.answers[qi].correct).length;
+  const byTopic = {};
+  for(const t in TOPICS) byTopic[t]={c:0,n:0};
+  graded.forEach(qi=>{ const q=QUESTIONS[qi]; byTopic[q.topic].n++; if(state.answers[qi].correct) byTopic[q.topic].c++; });
+
+  const foot=document.getElementById('foot'); if(foot) foot.remove();
+  app.innerHTML = `
+    <div class="qcard">
+      <h3 style="margin:0 0 4px">Session results</h3>
+      <div class="stat-grid">
+        <div class="stat"><div class="lbl">Score</div><div class="val">${correct}/${graded.length}</div></div>
+        <div class="stat"><div class="lbl">Percent</div><div class="val">${graded.length?Math.round(correct/graded.length*100):0}%</div></div>
+        <div class="stat"><div class="lbl">Answered</div><div class="val">${graded.length}/${state.order.length}</div></div>
+      </div>
+      <h3 style="font-size:14px;margin:16px 0 4px">By competency</h3>
+      ${Object.keys(TOPICS).map(t=>{
+        const b=byTopic[t]; const pct=b.n?Math.round(b.c/b.n*100):0;
+        const col = pct>=80?'var(--ok)':pct>=50?'var(--warn)':'var(--bad)';
+        return `<div class="topic-row"><span class="tn">${TOPICS[t].name} <span style="color:var(--ink3);font-size:11px">· ${TOPICS[t].weight}% of exam</span></span>
+          <div class="tbar"><div style="width:${pct}%;background:${col}"></div></div>
+          <span class="tsc">${b.c}/${b.n}</span></div>`;
+      }).join('')}
+      <div style="margin-top:18px" class="row">
+        <button class="primary" id="reviewMissBtn">Drill what I missed</button>
+        <button class="ghost" id="backMenuBtn">Back to menu</button>
+      </div>
+    </div>`;
+  document.getElementById('backMenuBtn').onclick=renderMenu;
+  document.getElementById('reviewMissBtn').onclick=()=>{
+    const miss = state.order.filter(qi=>!state.answers[qi]||!state.answers[qi].graded||!state.answers[qi].correct);
+    if(!miss.length){ alert('Nothing missed — clean sweep.'); return; }
+    state.order=miss; state.idx=0; state.mode='review';
+    // keep answers so hints persist but clear graded so they re-attempt
+    miss.forEach(qi=>{ if(state.answers[qi]){ state.answers[qi].graded=false; state.answers[qi].checks=null; } });
+    renderQuestion();
+  };
+}
+
+function renderStats(){
+  const rows = QUESTIONS.map((q,i)=>{
+    const pq=history.perQuestion[i]; if(!pq) return null;
+    const rate = pq.seen?Math.round(pq.correct/pq.seen*100):0;
+    return {i,q,pq,rate};
+  }).filter(Boolean).sort((a,b)=>a.rate-b.rate);
+  app.innerHTML = `<div class="qcard">
+    <h3 style="margin:0 0 10px">All-time progress <span style="color:var(--ink3);font-size:12px;font-weight:400">· ${rows.length} questions attempted</span></h3>
+    ${rows.length? rows.map(r=>{
+      const col = r.rate>=80?'var(--ok)':r.rate>=50?'var(--warn)':'var(--bad)';
+      return `<div class="topic-row"><span class="tn">Q${r.i+1} <span style="color:var(--ink3);font-size:11px">${TOPICS[r.q.topic].name}${r.q.type==='code'?' · code':''}</span></span>
+        <div class="tbar"><div style="width:${r.rate}%;background:${col}"></div></div>
+        <span class="tsc">${r.pq.correct}/${r.pq.seen}${r.pq.hintsUsed?` h${r.pq.hintsUsed}`:''}</span></div>`;
+    }).join('') : '<p style="color:var(--ink2)">No attempts yet.</p>'}
+    <div style="margin-top:16px"><button class="ghost" id="backMenuBtn2">Back to menu</button></div>
+  </div>`;
+  document.getElementById('backMenuBtn2').onclick=renderMenu;
+}
+
+// ---------- init ----------
+document.getElementById('homeBtn').onclick = ()=>{ const f=document.getElementById('foot'); if(f)f.remove(); renderMenu(); };
+renderMenu();
+bootPy();
+
+</script>
+</body>
+</html>
